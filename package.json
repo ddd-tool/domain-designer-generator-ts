@@ -1,0 +1,28 @@
+{
+  "name": "@ddd-tool/domain-designer-generator",
+  "version": "0.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "build": "run-p build:lib && run-p verify && run-p build:sync-file",
+    "build:lib": "vite build",
+    "build:sync-file": "node ./scripts/build-sync-file.mjs",
+    "verify": "vue-tsc -p ./tsconfig.build.json --composite false"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@ddd-tool/domain-designer-core": "0.0.0-alpha.19",
+    "@types/node": "^22.10.2",
+    "npm-run-all2": "^7.0.2",
+    "read-pkg": "^9.0.1",
+    "vite": "^6.0.6",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.13",
+    "vue-fn": "0.0.3-alpha.37",
+    "vue-tsc": "^2.2.0"
+  },
+  "packageManager": "pnpm@9.15.1+sha1.abc117858086cb10ecb54828d180b035cb6c8fdd"
+}
