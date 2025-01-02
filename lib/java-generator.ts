@@ -16,7 +16,7 @@ import { strUtil } from './common'
 
 export class JavaGeneratorTemplate extends GeneratorTemplate<Language.Java> {
   private readonly nonNullAnnotation: string
-  private readonly nullableAnnotation: string
+  // private readonly nullableAnnotation: string
 
   constructor(init: {
     designer: DomainDesigner
@@ -30,7 +30,7 @@ export class JavaGeneratorTemplate extends GeneratorTemplate<Language.Java> {
       ...init,
     })
     this.nonNullAnnotation = init.nonNullAnnotation
-    this.nullableAnnotation = init.nullableAnnotation
+    // this.nullableAnnotation = init.nullableAnnotation
   }
 
   override inferType(imports: Set<string>, obj: DomainDesignObject): string {
