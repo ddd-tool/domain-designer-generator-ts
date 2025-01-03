@@ -16,13 +16,16 @@
   "devDependencies": {
     "@ddd-tool/domain-designer-core": "0.0.0-alpha.19",
     "@types/node": "^22.10.2",
+    "@vue/reactivity": "^3.5.13",
     "npm-run-all2": "^7.0.2",
     "read-pkg": "^9.0.1",
     "vite": "^6.0.6",
     "vitest": "^2.1.8",
-    "vue": "^3.5.13",
     "vue-fn": "0.0.3-alpha.37",
     "vue-tsc": "^2.2.0"
+  },
+  "peerDependencies": {
+    "@vue/reactivity": "^3.5.13"
   },
   "packageManager": "pnpm@9.15.1+sha1.abc117858086cb10ecb54828d180b035cb6c8fdd"
 }

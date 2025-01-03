@@ -1,6 +1,6 @@
 import { createPluginHelperByAgg, createSingletonAgg } from 'vue-fn/domain'
 import { CodeFile, GeneratorTemplate, Language } from './define'
-import { ref } from 'vue'
+import { ref } from '@vue/reactivity'
 
 const agg = createSingletonAgg(() => {
   const javaGeneratorTemplate = ref<GeneratorTemplate<Language> | undefined>(undefined)
