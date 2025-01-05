@@ -10,8 +10,11 @@ import {
 } from '@ddd-tool/domain-designer-core'
 import { GeneratorPliginHelper } from '../domain/generator-agg'
 import { strUtil } from '../common'
-import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, JavaContext, JavaGeneratorAddition } from '../domain/define'
+import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, java } from '../domain/define'
 import { Ref } from '@vue/reactivity'
+
+const JavaGeneratorAddition = java.JavaGeneratorAddition
+type JavaContext = java.JavaContext
 
 export default GeneratorPliginHelper.createHotSwapPlugin(() => {
   function getDomainObjectName(info: DomainDesignObject) {

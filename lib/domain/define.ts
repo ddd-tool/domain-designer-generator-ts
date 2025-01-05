@@ -92,33 +92,40 @@ export interface CodeSnippets<
 // ***************************************************************************
 // 生成器选项
 // ***************************************************************************
-
-export enum JavaGeneratorAddition {
-  Lombok = 'Lombok',
-  LombokBuilder = 'LombokBuilder',
-  RecordVakueObject = 'RecordVakueObject',
-  CommandHandler = 'CommandHandler',
-  Jpa = 'Jpa',
-  Timezone = 'Timezone',
+export namespace java {
+  export enum JavaGeneratorAddition {
+    Lombok = 'Lombok',
+    LombokBuilder = 'LombokBuilder',
+    RecordVakueObject = 'RecordVakueObject',
+    CommandHandler = 'CommandHandler',
+    Jpa = 'Jpa',
+    Timezone = 'Timezone',
+  }
+  export interface JavaContext extends GeneratorContext<Language.Java> {
+    nonNullAnnotation: string
+    nullableAnnotation: string
+  }
 }
-export enum KotlinGeneratorAddition {}
-export enum CSharpGeneratorAddition {}
-export enum GoGeneratorAddition {}
+export namespace kotlin {
+  export enum KotlinGeneratorAddition {}
+}
+export namespace csharp {
+  export enum CSharpGeneratorAddition {}
+}
+export namespace go {
+  export enum GoGeneratorAddition {}
+}
 
 export type GeneratorAddition<LANG extends Language> = LANG extends 'java'
-  ? JavaGeneratorAddition
+  ? java.JavaGeneratorAddition
   : LANG extends 'kotlin'
-  ? KotlinGeneratorAddition
+  ? kotlin.KotlinGeneratorAddition
   : LANG extends 'csharp'
-  ? CSharpGeneratorAddition
+  ? csharp.CSharpGeneratorAddition
   : LANG extends 'go'
-  ? GoGeneratorAddition
+  ? go.GoGeneratorAddition
   : never
 
-export interface JavaContext extends GeneratorContext<Language.Java> {
-  nonNullAnnotation: string
-  nullableAnnotation: string
-}
 export interface GeneratorContext<LANG extends Language> {
   namespace: string
   moduleName: string
