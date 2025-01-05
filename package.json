@@ -1,6 +1,6 @@
 {
   "name": "@ddd-tool/domain-designer-generator",
-  "version": "0.0.0-alpha.3",
+  "version": "0.0.0-alpha.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@ddd-tool/domain-designer-core": "0.0.0-alpha.21",
+    "@ddd-tool/domain-designer-core": "0.0.0-alpha.28",
     "@types/node": "^22.10.2",
     "@vue/reactivity": "^3.5.13",
     "npm-run-all2": "^7.0.2",
