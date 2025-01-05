@@ -1,21 +1,20 @@
 import { expect, it } from 'vitest'
-import { createDomainDesigner } from '@ddd-tool/domain-designer-core'
-import { JavaGeneratorAddition } from '../domain/define'
-import { JavaGeneratorTemplate } from '../java-generator'
-
-const designer = createDomainDesigner()
-const i = designer.info
-const event = designer.event('messageSentEvent', [i.id('id'), 'content', 'createTime'])
+import designer1 from './designer-demo1'
+import { useGeneratorAgg, GENERATOR_JAVA_PLUGIN, GeneratorPliginHelper } from '..'
+import { JavaContext, JavaGeneratorAddition } from '../domain/define'
 
 it('', () => {
-  const javaGeneratorTemplate = new JavaGeneratorTemplate({
-    additions: [JavaGeneratorAddition.Lombok],
+  const agg = useGeneratorAgg(designer1)
+  GeneratorPliginHelper.registerPlugin(GENERATOR_JAVA_PLUGIN)
+  const context: JavaContext = {
+    additions: new Set([JavaGeneratorAddition.Lombok]),
     moduleName: 'test',
     namespace: 'com.example',
-    designer,
-    nonNullAnnotation: 'NonNull',
-    nullableAnnotation: 'Nullable',
-  })
-  const eventSnippets = javaGeneratorTemplate.getEventCode(event)
-  expect(JSON.stringify(eventSnippets.imports) + eventSnippets.content).toBe('')
+    nonNullAnnotation: 'org.springframework.lang.NonNull',
+    nullableAnnotation: 'org.springframework.lang.Nullable',
+  }
+  agg.commands.setContext(context)
+  const files = agg.commands.genCodeFiles()
+  expect(files).toBe(1)
+  // expect(files.filter((i) => i.getName().endsWith('Aggregation.java'))).toBe(1)
 })

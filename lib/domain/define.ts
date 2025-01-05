@@ -1,8 +1,6 @@
 import {
-  DomainDesigner,
   DomainDesignInfo,
   DomainDesignInfoType,
-  DomainDesignObject,
   DomainDesignReadModel,
   isDomainDesignAgg,
   isDomainDesignCommand,
@@ -15,7 +13,6 @@ import {
   type DomainDesignFacadeCommand,
   type DomainDesignInfoRecord,
 } from '@ddd-tool/domain-designer-core'
-import { strUtil } from '../common'
 
 export type DomainNode =
   | DomainDesignCommand<DomainDesignInfoRecord>
@@ -41,14 +38,53 @@ export enum Language {
   Go = 'go',
 }
 
-export interface CodeFile {
-  imports: Set<string>
-  dir: string
-  name: string
-  ext: string
-  content: string
+export class CodeFile {
+  private readonly imports: Set<string> = new Set()
+  private parentDir: string[]
+  private name: string
+  private content: string = ''
+  constructor(parentDir: string[], name: string) {
+    this.parentDir = parentDir
+    this.name = name
+  }
+
+  addImport(imp: string) {
+    this.imports.add(imp)
+  }
+  addImports(imports: string[] | Set<string>) {
+    for (const imp of imports) {
+      this.imports.add(imp)
+    }
+  }
+  getImports(): string[] {
+    return Array.from(this.imports)
+  }
+  appendContent(content: string) {
+    this.content += content
+  }
+  appendContentln(content: string) {
+    this.content += content + '\n'
+  }
+  getContent(): string {
+    return this.content
+  }
+  getName(): string {
+    return this.name
+  }
+  setName(name: string) {
+    this.name = name
+  }
+  getParentDir(): string[] {
+    return this.parentDir
+  }
+  setParentDir(parentDir: string[]) {
+    this.parentDir = parentDir
+  }
 }
-export interface CodeSnippets {
+export interface CodeSnippets<
+  TYPE extends 'Info' | 'Agg' | 'Command' | 'CommandHandler' | 'Event' | 'FacadeCommand' | 'ReadMode'
+> {
+  type: TYPE
   imports: Set<string>
   content: string
 }
@@ -56,6 +92,7 @@ export interface CodeSnippets {
 // ***************************************************************************
 // 生成器选项
 // ***************************************************************************
+
 export enum JavaGeneratorAddition {
   Lombok = 'Lombok',
   LombokBuilder = 'LombokBuilder',
@@ -78,36 +115,25 @@ export type GeneratorAddition<LANG extends Language> = LANG extends 'java'
   ? GoGeneratorAddition
   : never
 
-// ***************************************************************************
-// 生成器模板
-// ***************************************************************************
-export abstract class GeneratorTemplate<LANG extends Language, ADDI = GeneratorAddition<LANG>> {
-  protected readonly designer: DomainDesigner
-  protected namespace: string
-  protected moduleName: string
-  protected additions: Set<ADDI> = new Set()
-  protected codeFiles: Record<string, CodeFile> = {}
-
-  constructor(init: { designer: DomainDesigner; namespace: string; moduleName: string; additions: ADDI[] }) {
-    this.designer = init.designer
-    this.namespace = init.namespace
-    this.moduleName = init.moduleName
-    if (init.additions) {
-      for (const addi of init.additions) {
-        this.additions.add(addi)
-      }
-    }
-  }
-  getDomainObjectName(obj: DomainDesignObject): string {
-    return strUtil.stringToUpperCamel(obj._attributes.name)
-  }
-  abstract inferType(imports: Set<string>, obj: DomainDesignObject): string
-  abstract getFileName(struct: DomainDesignObject): string
-  abstract getCommandCode(cmd: DomainDesignCommand<DomainDesignInfoRecord>): CodeSnippets
-  abstract getFacadeCommandCode(cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>): CodeSnippets
-  abstract getAggCode(agg: DomainDesignAgg<DomainDesignInfoRecord>): CodeSnippets
-  abstract getEventCode(event: DomainDesignEvent<DomainDesignInfoRecord>): CodeSnippets
-  abstract getInfoCode(info: DomainDesignInfo<DomainDesignInfoType, string>): CodeSnippets
-  abstract getReadModelCode(readModel: DomainDesignReadModel<DomainDesignInfoRecord>): CodeSnippets
-  abstract generate(): CodeFile[]
+export interface JavaContext extends GeneratorContext<Language.Java> {
+  nonNullAnnotation: string
+  nullableAnnotation: string
 }
+export interface GeneratorContext<LANG extends Language> {
+  namespace: string
+  moduleName: string
+  additions: Set<GeneratorAddition<LANG>>
+}
+
+export type InfoCodeProvider = (info: DomainDesignInfo<DomainDesignInfoType, string>) => CodeSnippets<'Info'>[]
+export type CommandCodeProvider = (
+  cmd: DomainDesignCommand<DomainDesignInfoRecord>
+) => CodeSnippets<'Command' | 'CommandHandler'>[]
+export type FacadeCommandCodeProvider = (
+  cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>
+) => CodeSnippets<'FacadeCommand'>[]
+export type AggCodeProvider = (agg: DomainDesignAgg<DomainDesignInfoRecord>) => CodeSnippets<'Agg'>[]
+export type EventCodeProvider = (event: DomainDesignEvent<DomainDesignInfoRecord>) => CodeSnippets<'Event'>[]
+export type ReadModelCodeProvider = (
+  readModel: DomainDesignReadModel<DomainDesignInfoRecord>
+) => CodeSnippets<'ReadMode'>[]

@@ -1,5 +1,5 @@
-import fs from 'node:fs'
-import path from 'node:path'
+import fs from 'fs'
+import path from 'path'
 import { readPackageSync } from 'read-pkg'
 
 const rootDir = process.cwd()
@@ -13,6 +13,5 @@ delete distPackageInfo.files
 delete distPackageInfo.scripts
 delete distPackageInfo.readme
 distPackageInfo.private = false
-distPackageInfo.main = 'index.umd.cjs'
-distPackageInfo.module = 'index.js'
+distPackageInfo.main = 'index.js'
 fs.writeFileSync(path.join(rootDir, 'dist', 'package.json'), JSON.stringify(distPackageInfo, null, 2))
