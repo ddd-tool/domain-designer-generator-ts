@@ -45,8 +45,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             imports.add('java.time.LocalDateTime')
             return 'LocalDateTime'
           }
-        } else if (/\b(enum|gender|sex|count|flag|times)\b/.test(name)) {
+        } else if (/\b(enum|gender|sex|count|amount|num|number|flag|times)\b/.test(name)) {
           return 'Integer'
+        } else if (/\b(price)$/.test(name)) {
+          imports.add('java.math.BigDecimal')
+          return 'BigDecimal'
         } else if (/^(if|is)\b/.test(name)) {
           return 'Boolean'
         }
@@ -66,7 +69,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const code: string[] = []
           if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
             // 高版本jdk的record类型
-            code.push(`public record ${className} (@${nonNullAnnotation} ${inferType(imports, info)} value) {`)
+            code.push(`public record ${className}(@${nonNullAnnotation} ${inferType(imports, info)} value) {`)
             code.push(`    public ${className} {`)
             code.push(`        // HACK check value`)
             code.push(`    }`)
@@ -131,7 +134,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)
             }
-            code.push(`public record ${className} (`)
+            code.push(`public record ${className}(`)
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
@@ -149,11 +152,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)
             }
-            code.push(`publish class ${className} {`)
+            code.push(`public class ${className} {`)
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
-              code.push(`    private final ${infoName} ${strUtil.upperFirst(infoName)};`)
+              code.push(`    private final ${infoName} ${strUtil.lowerFirst(infoName)};`)
             }
             code.push(``)
             const infoCode: string[] = []
@@ -166,11 +169,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`    }`)
             code.push(`}`)
           } else {
-            code.push(`publish class ${className} {`)
+            code.push(`public class ${className} {`)
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
-              code.push(`    private final ${inferType(imports, info)} ${strUtil.upperFirst(infoName)};`)
+              code.push(`    private final ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)};`)
             }
             code.push(``)
             const infoCode: string[] = []
@@ -204,12 +207,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           imports.add(context.value.nonNullAnnotation)
           const className = getDomainObjectName(cmd)
           const code: string[] = []
-          const infos = Object.values(cmd.inner)
-          for (const info of infos) {
-            imports.add(
-              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
-            )
-          }
 
           if (additions.has(JavaGeneratorAddition.SpringFramework)) {
             imports.add('org.springframework.stereotype.Component')
@@ -224,7 +221,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           )
           for (const agg of aggs) {
             imports.add(`${context.value.namespace}.${context.value.moduleName}.${getDomainObjectName(agg)}`)
-            code.push(`    public ${getDomainObjectName(agg)} handle(${className} command) {`)
+            code.push(`    public ${getDomainObjectName(agg)} handle(@${nonNullAnnotation} ${className} command) {`)
             code.push(`        // HACK Implement`)
             code.push(`    }`)
           }
@@ -270,7 +267,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           for (const command of commands) {
             const commandName = getDomainObjectName(command)
             code.push(``)
-            code.push(`    public void handle${commandName}(${commandName} ${strUtil.lowerFirst(commandName)}) {`)
+            code.push(
+              `    public void handle${commandName}(@${nonNullAnnotation} ${commandName} ${strUtil.lowerFirst(
+                commandName
+              )}) {`
+            )
             code.push(`        // HACK need implement`)
             code.push(`    }`)
           }
@@ -282,6 +283,18 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`    @${nonNullAnnotation}`)
             code.push(`    private ${infoName} ${strUtil.lowerFirst(infoName)};`)
           }
+          code.push(``)
+          // 构造函数
+          const argsCode: string[] = []
+          const initArgsCode: string[] = []
+          for (const info of infos) {
+            const infoName = getDomainObjectName(info)
+            argsCode.push(`@${nonNullAnnotation} ${infoName} ${strUtil.lowerFirst(infoName)}`)
+            initArgsCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
+          }
+          code.push(`    public ${className}(${argsCode.join(', ')}) {`)
+          code.push(`        ${initArgsCode.join('\n        ')}`)
+          code.push(`    }`)
           for (const info of infos) {
             const infoName = getDomainObjectName(info)
             code.push(``)
@@ -296,7 +309,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           for (const command of commands) {
             const commandName = getDomainObjectName(command)
             code.push(``)
-            code.push(`    public void handle${commandName}(${commandName} ${strUtil.lowerFirst(commandName)}) {`)
+            code.push(
+              `    public void handle${commandName}(@${nonNullAnnotation} ${commandName} ${strUtil.lowerFirst(
+                commandName
+              )}) {`
+            )
             code.push(`        // HACK need implement`)
             code.push(`    }`)
           }
@@ -330,7 +347,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)
             }
-            code.push(`publish record ${className} (`)
+            code.push(`public record ${className}(`)
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
@@ -348,7 +365,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)
             }
-            code.push(`publish class ${className} {`)
+            code.push(`public class ${className} {`)
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
@@ -365,7 +382,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`    }`)
             code.push(`}`)
           } else {
-            code.push(`publish class ${className} {`)
+            code.push(`public class ${className} {`)
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
