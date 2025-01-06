@@ -12,11 +12,13 @@ import { GeneratorPliginHelper } from '../domain/generator-agg'
 import { strUtil } from '../common'
 import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, java } from '../domain/define'
 import { Ref } from '@vue/reactivity'
+import { getSystemErrorName } from 'node:util'
 
 const JavaGeneratorAddition = java.JavaGeneratorAddition
 type JavaContext = java.JavaContext
 
 export default GeneratorPliginHelper.createHotSwapPlugin(() => {
+  const VALUE_PACKAGE = 'value'
   function getDomainObjectName(info: DomainDesignObject) {
     return strUtil.stringToUpperCamel(info._attributes.name)
   }
@@ -46,6 +48,8 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           }
         } else if (/\b(enum|gender|sex|count|flag|times)\b/.test(name)) {
           return 'Integer'
+        } else if (/^(if|is)\b/.test(name)) {
+          return 'Boolean'
         }
         if (isDomainDesignInfo(obj) && (obj._attributes.type === 'Id' || obj._attributes.type === 'Version')) {
           return 'Long'
@@ -108,84 +112,131 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
       function commandCodeProvider(
         cmd: DomainDesignCommand<DomainDesignInfoRecord>
       ): CodeSnippets<'Command' | 'CommandHandler'>[] {
+        const codeSnippets: CodeSnippets<'Command' | 'CommandHandler'>[] = []
         const additions = context.value.additions
-
-        const imports = new Set<string>()
-        imports.add(context.value.nonNullAnnotation)
         const nonNullAnnotation = context.value.nonNullAnnotation.split('.').pop()
-        const className = getDomainObjectName(cmd)
-        const code: string[] = []
-        const infos = Object.values(cmd.inner)
-        if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
-          if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
-            code.push(`@lombok.Builder(toBuilder = true)`)
-          }
-          code.push(`public record ${className} {`)
-          const infoCode: string[] = []
+
+        {
+          const imports = new Set<string>()
+          imports.add(context.value.nonNullAnnotation)
+          const className = getDomainObjectName(cmd)
+          const code: string[] = []
+          const infos = Object.values(cmd.inner)
           for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            infoCode.push(`        @${nonNullAnnotation}\n        ${infoName} ${strUtil.lowerFirst(infoName)}`)
+            imports.add(
+              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
+            )
           }
-          code.push(infoCode.join(',\n'))
-          code.push(`) {`)
-          code.push(`    public ${className} {`)
-          code.push(`        // HACK check value`)
-          code.push(`    }`)
-          code.push(`}`)
-        } else if (additions.has(JavaGeneratorAddition.Lombok)) {
-          code.push(`@lombok.AllArgsConstructor`)
-          code.push(`@lombok.Getter`)
-          if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
-            code.push(`@lombok.Builder(toBuilder = true)`)
-          }
-          code.push(`publish class ${className} {`)
-          for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            code.push(`    @${nonNullAnnotation}`)
-            code.push(`    private final ${infoName} ${strUtil.upperFirst(infoName)};`)
-          }
-          code.push(``)
-          const infoCode: string[] = []
-          for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            infoCode.push(`@${nonNullAnnotation} ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)}`)
-          }
-          code.push(`    public ${className}(${infoCode.join(', ')}) {`)
-          code.push(`        // HACK check value`)
-          code.push(`    }`)
-          code.push(`}`)
-        } else {
-          code.push(`publish class ${className} {`)
-          for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            code.push(`    @${nonNullAnnotation}`)
-            code.push(`    private final ${inferType(imports, info)} ${strUtil.upperFirst(infoName)};`)
-          }
-          code.push(``)
-          const infoCode: string[] = []
-          for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            infoCode.push(`@${nonNullAnnotation} ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)}`)
-          }
-          code.push(`    public ${className}(${infoCode.join(', ')}) {`)
-          code.push(`        // HACK check value`)
-          code.push(`    }`)
-          for (const info of infos) {
-            const infoName = getDomainObjectName(info)
-            code.push(``)
-            code.push(`    public ${inferType(imports, info)} get${infoName} () {`)
-            code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
+
+          if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
+            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+              code.push(`@lombok.Builder(toBuilder = true)`)
+            }
+            code.push(`public record ${className} (`)
+            const infoCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              infoCode.push(`        @${nonNullAnnotation}\n        ${infoName} ${strUtil.lowerFirst(infoName)}`)
+            }
+            code.push(infoCode.join(',\n'))
+            code.push(`) {`)
+            code.push(`    public ${className} {`)
+            code.push(`        // HACK check value`)
             code.push(`    }`)
+            code.push(`}`)
+          } else if (additions.has(JavaGeneratorAddition.Lombok)) {
+            code.push(`@lombok.AllArgsConstructor`)
+            code.push(`@lombok.Getter`)
+            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+              code.push(`@lombok.Builder(toBuilder = true)`)
+            }
+            code.push(`publish class ${className} {`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(`    @${nonNullAnnotation}`)
+              code.push(`    private final ${infoName} ${strUtil.upperFirst(infoName)};`)
+            }
+            code.push(``)
+            const infoCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              infoCode.push(`@${nonNullAnnotation} ${infoName} ${strUtil.lowerFirst(infoName)}`)
+            }
+            code.push(`    public ${className}(${infoCode.join(', ')}) {`)
+            code.push(`        // HACK check value`)
+            code.push(`    }`)
+            code.push(`}`)
+          } else {
+            code.push(`publish class ${className} {`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(`    @${nonNullAnnotation}`)
+              code.push(`    private final ${inferType(imports, info)} ${strUtil.upperFirst(infoName)};`)
+            }
+            code.push(``)
+            const infoCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              infoCode.push(`@${nonNullAnnotation} ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)}`)
+            }
+            code.push(`    public ${className}(${infoCode.join(', ')}) {`)
+            code.push(`        // HACK check value`)
+            code.push(`    }`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(``)
+              code.push(`    public ${inferType(imports, info)} get${infoName} () {`)
+              code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
+              code.push(`    }`)
+            }
+            code.push(`}`)
           }
-          code.push(`}`)
-        }
-        return [
-          {
+          codeSnippets.push({
             type: 'Command',
             imports,
             content: code.join('\n'),
-          },
-        ]
+          })
+        }
+        if (!additions.has(JavaGeneratorAddition.CommandHandler)) {
+          return codeSnippets
+        }
+        {
+          const imports = new Set<string>()
+          imports.add(context.value.nonNullAnnotation)
+          const className = getDomainObjectName(cmd)
+          const code: string[] = []
+          const infos = Object.values(cmd.inner)
+          for (const info of infos) {
+            imports.add(
+              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
+            )
+          }
+
+          if (additions.has(JavaGeneratorAddition.SpringFramework)) {
+            imports.add('org.springframework.stereotype.Component')
+            code.push(`@Component`)
+          }
+          if (additions.has(JavaGeneratorAddition.Lombok)) {
+            code.push(`@lombok.RequiredArgsConstructor`)
+          }
+          code.push(`public class ${className}Handler {`)
+          const aggs = [...api.states.designer.value._getContext().getAssociationMap()[cmd._attributes.__id]].filter(
+            (agg) => agg._attributes.rule === 'Agg'
+          )
+          for (const agg of aggs) {
+            imports.add(`${context.value.namespace}.${context.value.moduleName}.${getDomainObjectName(agg)}`)
+            code.push(`    public ${getDomainObjectName(agg)} handle(${className} command) {`)
+            code.push(`        // HACK Implement`)
+            code.push(`    }`)
+          }
+          code.push(`}`)
+          codeSnippets.push({
+            type: 'CommandHandler',
+            imports,
+            content: code.join('\n'),
+          })
+        }
+        return codeSnippets
       }
       api.commands._setCommandCodeProvider(commandCodeProvider)
       api.commands._setFacadeCommandCodeProvider(commandCodeProvider as unknown as FacadeCommandCodeProvider)
@@ -200,13 +251,17 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         const className = getDomainObjectName(agg)
         const code: string[] = []
         const infos = Object.values(agg.inner)
+        for (const info of infos) {
+          imports.add(
+            `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
+          )
+        }
         if (additions.has(JavaGeneratorAddition.Lombok)) {
           code.push(`@lombok.AllArgsConstructor`)
           code.push(`@lombok.Getter`)
           code.push(`public class ${className} {`)
           for (const info of infos) {
             const infoName = getDomainObjectName(info)
-            imports.add(`${context.value.namespace}.${context.value.moduleName}.${infoName}`)
             code.push(`    @${nonNullAnnotation}`)
             code.push(`    private ${infoName} ${strUtil.lowerFirst(infoName)};`)
           }
@@ -266,6 +321,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const className = getDomainObjectName(event)
           const code: string[] = []
           const infos = Object.values(event.inner)
+          for (const info of infos) {
+            imports.add(
+              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
+            )
+          }
           if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
             // 高版本jdk的record类型
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
@@ -344,13 +404,40 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
       api.commands._setCodeFileProvider(() => {
         const codeFiles: CodeFile[] = []
+        const infoMap: Record<string, boolean> = {}
+
+        function genInfos(infos: DomainDesignInfoRecord) {
+          for (const info of Object.values(infos)) {
+            const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, VALUE_PACKAGE]
+            const fileName = getDomainObjectName(info) + '.java'
+            if (infoMap[`${parentDir}/${fileName}`] === true) {
+              continue
+            }
+            const codes = api.commands._genInfoCode(info)
+            if (codes.length === 0) {
+              continue
+            }
+            const file = new CodeFile(parentDir, fileName)
+            file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE};`)
+            file.appendContentln('')
+            for (const imp of codes[0].imports) {
+              file.appendContentln(`import ${imp};`)
+            }
+            file.appendContentln('')
+            file.appendContentln(codes[0].content)
+            codeFiles.push(file)
+            infoMap[`${parentDir}/${fileName}`] = true
+          }
+        }
+
         const commands = api.states.designer.value._getContext().getCommands()
         for (const command of commands) {
+          genInfos(command.inner)
           const codes = api.commands._genCommandCode(command)
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
           codes.forEach((code) => {
             if (code.type === 'Command') {
-              const file: CodeFile = new CodeFile(parentDir, getDomainObjectName(command) + '.java')
+              const file = new CodeFile(parentDir, getDomainObjectName(command) + '.java')
               file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
               file.appendContentln('')
               file.addImports(code.imports)
@@ -361,7 +448,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               file.appendContentln(code.content)
               codeFiles.push(file)
             } else if (code.type === 'CommandHandler') {
-              const file: CodeFile = new CodeFile(parentDir, getDomainObjectName(command) + 'Handler.java')
+              const file = new CodeFile(parentDir, getDomainObjectName(command) + 'Handler.java')
               file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
               file.appendContentln('')
               file.addImports(code.imports)
@@ -378,11 +465,12 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         }
         const facadeCommands = api.states.designer.value._getContext().getFacadeCommands()
         for (const facadeCmd of facadeCommands) {
+          genInfos(facadeCmd.inner)
           const codes = api.commands._genFacadeCommandCode(facadeCmd)
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
           codes.forEach((code) => {
             if (code.type === 'FacadeCommand') {
-              const file: CodeFile = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + '.java')
+              const file = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + '.java')
               file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
               file.appendContentln('')
               file.addImports(code.imports)
@@ -399,10 +487,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         }
         const aggs = api.states.designer.value._getContext().getAggs()
         for (const agg of aggs) {
+          genInfos(agg.inner)
           const codes = api.commands._genAggCode(agg)
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
           codes.forEach((code) => {
-            const file: CodeFile = new CodeFile(parentDir, getDomainObjectName(agg) + '.java')
+            const file = new CodeFile(parentDir, getDomainObjectName(agg) + '.java')
             file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
             file.appendContentln('')
             file.addImports(code.imports)
@@ -416,10 +505,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         }
         const events = api.states.designer.value._getContext().getEvents()
         for (const event of events) {
+          genInfos(event.inner)
           const codes = api.commands._genEventCode(event)
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
           codes.forEach((code) => {
-            const file: CodeFile = new CodeFile(parentDir, getDomainObjectName(event) + '.java')
+            const file = new CodeFile(parentDir, getDomainObjectName(event) + '.java')
             file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
             file.appendContentln('')
             file.addImports(code.imports)

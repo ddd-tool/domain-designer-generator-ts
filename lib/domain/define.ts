@@ -100,6 +100,7 @@ export namespace java {
     CommandHandler = 'CommandHandler',
     Jpa = 'Jpa',
     Timezone = 'Timezone',
+    SpringFramework = 'SpringFramework',
   }
   export interface JavaContext extends GeneratorContext<Language.Java> {
     nonNullAnnotation: string
