@@ -12,7 +12,6 @@ import { GeneratorPliginHelper } from '../domain/generator-agg'
 import { strUtil } from '../common'
 import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, java } from '../domain/define'
 import { Ref } from '@vue/reactivity'
-import { getSystemErrorName } from 'node:util'
 
 const JavaGeneratorAddition = java.JavaGeneratorAddition
 type JavaContext = java.JavaContext
