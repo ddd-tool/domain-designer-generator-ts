@@ -1,6 +1,6 @@
 import { Ref } from '@vue/reactivity'
 import { GeneratorPliginHelper } from '../domain/generator-agg'
-import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, kotlin } from '../domain/define'
+import { CodeFile, CodeSnippets, kotlin } from '../domain/define'
 import {
   DomainDesignAgg,
   DomainDesignCommand,
