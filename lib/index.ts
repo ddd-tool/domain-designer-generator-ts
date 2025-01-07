@@ -4,3 +4,6 @@ export * as define from './domain/define'
 
 import GENERATOR_JAVA_PLUGIN from './domain-plugin/generator-java-plugin'
 export { GENERATOR_JAVA_PLUGIN }
+
+import GENERATOR_KOTLIN_PLUGIN from './domain-plugin/generator-kotlin-plugin'
+export { GENERATOR_KOTLIN_PLUGIN }

@@ -82,7 +82,7 @@ export class CodeFile {
   }
 }
 export interface CodeSnippets<
-  TYPE extends 'Info' | 'Agg' | 'Command' | 'CommandHandler' | 'Event' | 'FacadeCommand' | 'ReadMode'
+  TYPE extends 'Info' | 'Agg' | 'AggImpl' | 'Command' | 'CommandHandler' | 'Event' | 'FacadeCommand' | 'ReadMode'
 > {
   type: TYPE
   imports: Set<string>
@@ -108,7 +108,12 @@ export namespace java {
   }
 }
 export namespace kotlin {
-  export enum KotlinGeneratorAddition {}
+  export enum KotlinGeneratorAddition {
+    ValueClass = 'ValueClass',
+    CommandHandler = 'CommandHandler',
+    Timezone = 'Timezone',
+  }
+  export interface KotlinContext extends GeneratorContext<Language.Kotlin> {}
 }
 export namespace csharp {
   export enum CSharpGeneratorAddition {}
@@ -140,7 +145,7 @@ export type CommandCodeProvider = (
 export type FacadeCommandCodeProvider = (
   cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>
 ) => CodeSnippets<'FacadeCommand'>[]
-export type AggCodeProvider = (agg: DomainDesignAgg<DomainDesignInfoRecord>) => CodeSnippets<'Agg'>[]
+export type AggCodeProvider = (agg: DomainDesignAgg<DomainDesignInfoRecord>) => CodeSnippets<'Agg' | 'AggImpl'>[]
 export type EventCodeProvider = (event: DomainDesignEvent<DomainDesignInfoRecord>) => CodeSnippets<'Event'>[]
 export type ReadModelCodeProvider = (
   readModel: DomainDesignReadModel<DomainDesignInfoRecord>
