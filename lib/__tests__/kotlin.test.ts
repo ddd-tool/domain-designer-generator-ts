@@ -15,5 +15,5 @@ it('designer1', () => {
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()
   // expect(files).toBe(1)
-  expect(files.filter((i) => i.getName().endsWith('Event.kt'))).toBe(1)
+  expect(files.filter((i) => i.getName().endsWith('Agg.kt'))).toBe(1)
 })

@@ -336,6 +336,8 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
           const file = new CodeFile(parentDir, getDomainObjectName(agg) + '.kt')
           const codeBuff: string[] = []
+          file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}`)
+          file.appendContentln('')
           codes.forEach((code) => {
             if (code.type === 'Agg') {
               file.addImports(code.imports)
