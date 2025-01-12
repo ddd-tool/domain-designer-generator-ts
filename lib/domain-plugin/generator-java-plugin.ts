@@ -438,7 +438,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           for (const info of Object.values(infos)) {
             const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, VALUE_PACKAGE]
             const fileName = getDomainObjectName(info) + '.java'
-            if (infoMap[`${parentDir}/${fileName}`] === true) {
+            if (infoMap[`${parentDir.join('/')}/${fileName}`] === true) {
               continue
             }
             const codes = api.commands._genInfoCode(info)
@@ -454,7 +454,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             file.appendContentln('')
             file.appendContentln(codes[0].content)
             codeFiles.push(file)
-            infoMap[`${parentDir}/${fileName}`] = true
+            infoMap[`${parentDir.join('/')}/${fileName}`] = true
           }
         }
 

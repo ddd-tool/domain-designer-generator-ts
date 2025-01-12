@@ -7,3 +7,6 @@ export { GENERATOR_JAVA_PLUGIN }
 
 import GENERATOR_KOTLIN_PLUGIN from './domain-plugin/generator-kotlin-plugin'
 export { GENERATOR_KOTLIN_PLUGIN }
+
+import GENERATOR_GO_PLUGIN from './domain-plugin/generator-go-plugin'
+export { GENERATOR_GO_PLUGIN }

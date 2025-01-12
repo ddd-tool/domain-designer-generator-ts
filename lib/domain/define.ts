@@ -117,9 +117,13 @@ export namespace kotlin {
 }
 export namespace csharp {
   export enum CSharpGeneratorAddition {}
+  export interface CSharpContext extends GeneratorContext<Language.CSharp> {}
 }
 export namespace go {
-  export enum GoGeneratorAddition {}
+  export enum GoGeneratorAddition {
+    SinglePackageEachDesigner = 'SinglePackageEachDesigner',
+  }
+  export interface GoContext extends GeneratorContext<Language.Go> {}
 }
 
 export type GeneratorAddition<LANG extends Language> = LANG extends 'java'
