@@ -10,3 +10,6 @@ export { GENERATOR_KOTLIN_PLUGIN }
 
 import GENERATOR_GO_PLUGIN from './domain-plugin/generator-go-plugin'
 export { GENERATOR_GO_PLUGIN }
+
+import GENERATOR_CSHARP_PLUGIN from './domain-plugin/generator-csharp-plugin'
+export { GENERATOR_CSHARP_PLUGIN }
