@@ -116,8 +116,20 @@ export namespace kotlin {
   export interface KotlinContext extends GeneratorContext<Language.Kotlin> {}
 }
 export namespace csharp {
-  export enum CSharpGeneratorAddition {}
-  export interface CSharpContext extends GeneratorContext<Language.CSharp> {}
+  export enum CSharpGeneratorAddition {
+    Timezone = 'Timezone',
+    RecordStruct = 'RecordStruct',
+    CommandInterface = 'CommandInterface',
+    CommandHandlerInterface = 'CommandHandlerInterface',
+    AggInterface = 'AggInterface',
+    EventInterface = 'EventInterface',
+  }
+  export interface CSharpContext extends GeneratorContext<Language.CSharp> {
+    commandInterface: string
+    commandHandlerInterface: string
+    aggInterface: string
+    eventInterface: string
+  }
 }
 export namespace go {
   export enum GoGeneratorAddition {

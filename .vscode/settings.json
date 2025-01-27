@@ -7,5 +7,10 @@
     "prettier.printWidth": 120,
     "prettier.tabWidth": 2,
     "prettier.useTabs": false,
-    "prettier.endOfLine": "lf"
+    "prettier.endOfLine": "lf",
+    "[zig]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ziglang.vscode-zig",
+        "editor.tabSize": 4
+    }
 }

@@ -15,7 +15,7 @@ import {
 import { strUtil } from '../common'
 
 type GoContext = go.GoContext
-const GoGeneratorAddition = go.GoGeneratorAddition
+// const GoGeneratorAddition = go.GoGeneratorAddition
 
 export default GeneratorPliginHelper.createHotSwapPlugin(() => {
   return {
