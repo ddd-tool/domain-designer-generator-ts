@@ -98,21 +98,17 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           {
             const code: string[] = []
             const infos = Object.values(cmd.inner)
-            const commandInterface = (() => {
-              if (additions.has(CSharpGeneratorAddition.CommandInterface)) {
-                return ` : ${context.value.commandInterface}`
-              }
-              return ''
-            })()
-            code.push(`public record${getStructModifier(additions)} ${commandName}${commandInterface}`)
+            code.push(`public record${getStructModifier(additions)} ${commandName}`)
             code.push(`(`)
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              infoCode.push(`    ${infoName} ${strUtil.upperFirst(infoName)}`)
+              infoCode.push(`${infoName} ${strUtil.upperFirst(infoName)}`)
             }
             code.push(`    ${infoCode.join(',\n    ')}`)
-            code.push(`);`)
+            code.push(`)`)
+            code.push(`{`)
+            code.push(`}`)
             result.push({
               type: 'Command',
               content: code.join('\n'),
@@ -166,10 +162,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             })
             for (const command of commands) {
               const commandName = getDomainObjectName(command)
-              funCode.push(`    void Handle${commandName}(${commandName} command);`)
+              funCode.push(`void Handle${commandName}(${commandName} command);`)
             }
-            code.push(`    ${funCode.join('\n\n')}`)
+            code.push(`    ${funCode.join('\n\n    ')}`)
             code.push(`}`)
+            code.push(``)
             result.push({
               type: 'Agg',
               content: code.join('\n'),
@@ -180,28 +177,83 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const imports = new Set<string>()
             const code: string[] = []
             const aggName = getDomainObjectName(agg)
-            code.push(`public class ${aggName}: I${aggName}`)
-            code.push(`{`)
-
-            const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
-              return item._attributes.rule === 'Command' || item._attributes.rule === 'FacadeCommand'
-            })
-            for (const command of commands) {
-              const commandName = getDomainObjectName(command)
-              code.push(`    ${commandName} ${strUtil.lowerFirst(commandName)} { get; private set; }`)
+            const infos = Object.values(agg.inner)
+            const aggInterface = (() => {
+              if (additions.has(CSharpGeneratorAddition.AggInterface)) {
+                return `, ${context.value.aggInterface}`
+              }
+              return ''
+            })()
+            if (additions.has(CSharpGeneratorAddition.PrimaryConstructor)) {
+              const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
+                return item._attributes.rule === 'Command' || item._attributes.rule === 'FacadeCommand'
+              })
+              const paramCode: string[] = []
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                paramCode.push(`${infoName} ${strUtil.lowerFirst(infoName)}`)
+              }
+              code.push(`public class ${aggName}`)
+              code.push(`(`)
+              code.push(`    ${paramCode.join(`,\n    `)}`)
+              code.push(`): I${aggName}${aggInterface}`)
+              code.push(`{`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(
+                  `    public ${infoName} ${strUtil.upperFirst(infoName)} { get; private set; } = ${strUtil.lowerFirst(
+                    infoName
+                  )};`
+                )
+                code.push(``)
+              }
+              const funCode: string[] = []
+              for (const command of commands) {
+                const commandName = getDomainObjectName(command)
+                funCode.push(`public void Handle${commandName}(${commandName} command)`)
+                funCode.push(`{`)
+                funCode.push(`    // HACK implement`)
+                funCode.push(`}`)
+                funCode.push(``)
+              }
+              code.push(`    ${funCode.join('\n    ')}`)
+              code.push(`}`)
+            } else {
+              const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
+                return item._attributes.rule === 'Command' || item._attributes.rule === 'FacadeCommand'
+              })
+              code.push(`public class ${aggName} : I${aggName}${aggInterface}`)
+              code.push(`{`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(`    public ${infoName} ${strUtil.lowerFirst(infoName)} { get; private set; }`)
+              }
               code.push(``)
+              const paramCode: string[] = []
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                paramCode.push(`${infoName} ${infoName}`)
+              }
+              code.push(`    public ${aggName}(${paramCode.join(', ')})`)
+              code.push(`    {`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(`        ${infoName} = ${strUtil.lowerFirst(infoName)};`)
+              }
+              code.push(`    }`)
+              const funCode: string[] = []
+              for (const command of commands) {
+                const commandName = getDomainObjectName(command)
+                funCode.push(`public void Handle${commandName}(${commandName} command)`)
+                funCode.push(`{`)
+                funCode.push(`    // HACK implement`)
+                funCode.push(`}`)
+                funCode.push(``)
+              }
+              code.push(`    ${funCode.join('\n    ')}`)
+              code.push(`}`)
             }
 
-            const funCode: string[] = []
-            for (const command of commands) {
-              const commandName = getDomainObjectName(command)
-              funCode.push(`public void Handle${commandName}(${commandName} command)`)
-              funCode.push(`{`)
-              funCode.push(`    // HACK implement`)
-              funCode.push(`}`)
-              funCode.push(``)
-            }
-            code.push(`    ${funCode.join('\n    ')}`)
             result.push({
               type: 'AggImpl',
               content: code.join('\n'),
@@ -217,23 +269,19 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const additions = context.value.additions
           const eventName = getDomainObjectName(event)
           const imports = new Set<string>()
-          const eventInterface = (() => {
-            if (additions.has(CSharpGeneratorAddition.EventInterface)) {
-              return ` : ${context.value.eventInterface}`
-            }
-            return ''
-          })()
           const infos = Object.values(event.inner)
           const code: string[] = []
-          code.push(`public record${getStructModifier(additions)} ${eventName}${eventInterface}`)
+          code.push(`public record${getStructModifier(additions)} ${eventName}`)
           code.push(`(`)
           const infoCode: string[] = []
           for (const info of infos) {
             const infoName = getDomainObjectName(info)
-            infoCode.push(`    ${infoName} ${strUtil.upperFirst(infoName)}`)
+            infoCode.push(`${infoName} ${strUtil.upperFirst(infoName)}`)
           }
           code.push(`    ${infoCode.join(',\n    ')}`)
-          code.push(`);`)
+          code.push(`)`)
+          code.push(`{`)
+          code.push(`}`)
           return [
             {
               type: 'Event',

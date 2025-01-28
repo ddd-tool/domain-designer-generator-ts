@@ -119,16 +119,13 @@ export namespace csharp {
   export enum CSharpGeneratorAddition {
     Timezone = 'Timezone',
     RecordStruct = 'RecordStruct',
-    CommandInterface = 'CommandInterface',
+    PrimaryConstructor = 'PrimaryConstructor',
     CommandHandlerInterface = 'CommandHandlerInterface',
     AggInterface = 'AggInterface',
-    EventInterface = 'EventInterface',
   }
   export interface CSharpContext extends GeneratorContext<Language.CSharp> {
-    commandInterface?: string
     commandHandlerInterface?: string
     aggInterface?: string
-    eventInterface?: string
   }
 }
 export namespace go {

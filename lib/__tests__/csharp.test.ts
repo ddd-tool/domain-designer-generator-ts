@@ -8,9 +8,13 @@ it('designer1', () => {
   const agg = useGeneratorAgg(designer1)
   GeneratorPliginHelper.registerPlugin(GENERATOR_CSHARP_PLUGIN)
   const context: csharp.CSharpContext = {
-    additions: new Set([]),
+    additions: new Set([
+      // csharp.CSharpGeneratorAddition.PrimaryConstructor,
+      // csharp.CSharpGeneratorAddition.AggInterface,
+    ]),
     moduleName: designer1._getContext().getModuleName() || 'User',
     namespace: 'Application.Domain',
+    aggInterface: 'MyAgg',
   }
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()
