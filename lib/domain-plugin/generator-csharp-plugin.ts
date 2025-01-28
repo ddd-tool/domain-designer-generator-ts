@@ -188,7 +188,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             })
             for (const command of commands) {
               const commandName = getDomainObjectName(command)
-              code.push(`    ${commandName} ${strUtil.lowerFirst(commandName)} { get; }`)
+              code.push(`    ${commandName} ${strUtil.lowerFirst(commandName)} { get; private set; }`)
               code.push(``)
             }
 
@@ -217,9 +217,15 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const additions = context.value.additions
           const eventName = getDomainObjectName(event)
           const imports = new Set<string>()
+          const eventInterface = (() => {
+            if (additions.has(CSharpGeneratorAddition.EventInterface)) {
+              return ` : ${context.value.eventInterface}`
+            }
+            return ''
+          })()
           const infos = Object.values(event.inner)
           const code: string[] = []
-          code.push(`public record${getStructModifier(additions)} ${eventName}`)
+          code.push(`public record${getStructModifier(additions)} ${eventName}${eventInterface}`)
           code.push(`(`)
           const infoCode: string[] = []
           for (const info of infos) {
@@ -243,7 +249,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
       api.commands._setCodeFileProvider((): CodeFile[] => {
         const codeFiles: CodeFile[] = []
         const infoMap: Record<string, boolean> = {}
-        const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
+        const parentDir = [...context.value.namespace.split(/\./), strUtil.stringToUpperCamel(context.value.moduleName)]
 
         function genInfos(infos: DomainDesignInfoRecord): void {
           for (const info of Object.values(infos)) {
@@ -260,7 +266,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               file.appendContentln(`using ${imp};`)
             }
             file.appendContentln('')
-            file.appendContentln(`namespace ${context.value.namespace}.${context.value.moduleName}`)
+            file.appendContentln(
+              `namespace ${context.value.namespace}.${strUtil.stringToUpperCamel(context.value.moduleName)}`
+            )
             file.appendContentln('{')
             file.appendContentln(addTab(codes[0].content))
             file.appendContentln('}')
@@ -282,7 +290,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 file.appendContentln(`using ${imp};`)
               }
               file.appendContentln('')
-              file.appendContentln(`namespace ${context.value.namespace}.${context.value.moduleName}`)
+              file.appendContentln(
+                `namespace ${context.value.namespace}.${strUtil.stringToUpperCamel(context.value.moduleName)}`
+              )
               file.appendContentln('{')
               file.appendContentln(addTab(code.content))
               file.appendContentln('}')
@@ -302,7 +312,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             file.appendContentln(`using ${imp};`)
           }
           file.appendContentln('')
-          file.appendContentln(`namespace ${context.value.namespace}.${context.value.moduleName}`)
+          file.appendContentln(
+            `namespace ${context.value.namespace}.${strUtil.stringToUpperCamel(context.value.moduleName)}`
+          )
           file.appendContentln('{')
           file.appendContentln(addTab(codes[0].content))
           file.appendContentln('}')
@@ -322,12 +334,15 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             }
             file.appendContentln('')
           }
-          file.appendContentln(`namespace ${context.value.namespace}.${context.value.moduleName}`)
+          file.appendContentln(
+            `namespace ${context.value.namespace}.${strUtil.stringToUpperCamel(context.value.moduleName)}`
+          )
           file.appendContentln(`{`)
           for (const code of codes) {
             file.appendContentln(addTab(code.content))
           }
           file.appendContentln(`}`)
+          codeFiles.push(file)
         }
 
         const events = api.states.designer.value._getContext().getEvents()
@@ -341,7 +356,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             file.appendContentln(`using ${imp};`)
           }
           file.appendContentln('')
-          file.appendContentln(`namespace ${context.value.namespace}.${context.value.moduleName}`)
+          file.appendContentln(
+            `namespace ${context.value.namespace}.${strUtil.stringToUpperCamel(context.value.moduleName)}`
+          )
           file.appendContentln('{')
           file.appendContentln(addTab(codes[0].content))
           file.appendContentln('}')

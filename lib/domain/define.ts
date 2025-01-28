@@ -125,10 +125,10 @@ export namespace csharp {
     EventInterface = 'EventInterface',
   }
   export interface CSharpContext extends GeneratorContext<Language.CSharp> {
-    commandInterface: string
-    commandHandlerInterface: string
-    aggInterface: string
-    eventInterface: string
+    commandInterface?: string
+    commandHandlerInterface?: string
+    aggInterface?: string
+    eventInterface?: string
   }
 }
 export namespace go {
