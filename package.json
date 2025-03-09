@@ -14,15 +14,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@ddd-tool/domain-designer-core": "0.0.0-alpha.31",
-    "@types/node": "^22.10.7",
+    "@ddd-tool/domain-designer-core": "0.1.0-beta.1",
+    "@types/node": "^22.13.10",
     "@vue/reactivity": "^3.5.13",
     "npm-run-all2": "^7.0.2",
     "read-pkg": "^9.0.1",
-    "vite": "^6.0.11",
-    "vitest": "^2.1.8",
+    "vite": "^6.2.1",
+    "vitest": "^2.1.9",
     "vue-fn": "0.0.3-alpha.38",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^2.2.8"
   },
   "peerDependencies": {
     "@vue/reactivity": "^3.5.13"
