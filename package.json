@@ -21,7 +21,7 @@
     "read-pkg": "^9.0.1",
     "vite": "^6.2.1",
     "vitest": "^2.1.9",
-    "vue-fn": "0.0.3-alpha.38",
+    "vue-fn": "0.1.0-beta.0",
     "vue-tsc": "^2.2.8"
   },
   "peerDependencies": {

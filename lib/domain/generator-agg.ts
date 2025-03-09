@@ -1,4 +1,4 @@
-import { createPluginHelperByAggCreator, createSingletonAgg } from 'vue-fn/domain'
+import { createPluginHelperByAggCreator, createSingletonAgg } from 'vue-fn/domain-server'
 import {
   AggCodeProvider,
   CodeFile,
