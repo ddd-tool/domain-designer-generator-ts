@@ -1,11 +1,13 @@
 {
   "name": "@ddd-tool/domain-designer-generator",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest",
-    "build": "run-p build:lib && run-p verify && run-p build:sync-file",
+    "test": "run-p test:cli",
+    "test:cli": "vitest --coverage --run",
+    "test:ui": "vitest --coverage --ui",
+    "build": "run-p build:lib verify test:cli && run-p build:sync-file",
     "build:lib": "vite build",
     "build:sync-file": "node ./scripts/build-sync-file.mjs",
     "verify": "vue-tsc -p ./tsconfig.build.json --composite false"
@@ -14,18 +16,18 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@ddd-tool/domain-designer-core": "0.1.0-beta.1",
+    "@ddd-tool/domain-designer-core": "0.1.0-beta.2",
     "@types/node": "^22.13.10",
+    "@vitest/coverage-v8": "3.0.9",
     "@vue/reactivity": "^3.5.13",
     "npm-run-all2": "^7.0.2",
     "read-pkg": "^9.0.1",
-    "vite": "^6.2.1",
-    "vitest": "^2.1.9",
+    "vite": "^6.2.2",
+    "vitest": "^3.0.9",
     "vue-fn": "0.1.0-beta.0",
     "vue-tsc": "^2.2.8"
   },
   "peerDependencies": {
     "@vue/reactivity": "^3.5.13"
-  },
-  "packageManager": "pnpm@9.15.1+sha1.abc117858086cb10ecb54828d180b035cb6c8fdd"
+  }
 }

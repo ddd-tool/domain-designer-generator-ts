@@ -34,7 +34,31 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
     },
     mount({ api }) {
       const context = api.states.context as Readonly<Ref<JavaContext>>
-      function inferType(imports: Set<string>, obj: DomainDesignObject): string {
+      const ignoredValueObjects = api.states.designer.value
+        ._getContext()
+        .getDesignerOptions()
+        .ignoreValueObjects.map((s) => strUtil.stringToLowerCamel(s))
+      function isValueObject(info: DomainDesignInfo<DomainDesignInfoType, string>): boolean {
+        return !ignoredValueObjects.includes(strUtil.stringToLowerCamel(info._attributes.name))
+      }
+      function inferObjectValueTypeByInfo(imports: Set<string>, obj: DomainDesignInfo<DomainDesignInfoType, string>) {
+        if (isValueObject(obj)) {
+          return strUtil.stringToUpperCamel(obj._attributes.name)
+        }
+        return inferJavaTypeByName(imports, obj)
+      }
+      function importInfos(imports: Set<string>, infos: DomainDesignInfo<DomainDesignInfoType, string>[]) {
+        for (const info of infos) {
+          if (!isValueObject(info)) {
+            inferJavaTypeByName(imports, info)
+            continue
+          }
+          imports.add(
+            `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
+          )
+        }
+      }
+      function inferJavaTypeByName(imports: Set<string>, obj: DomainDesignObject): string {
         const additions = context.value.additions
         const name = strUtil.stringToLowerSnake(obj._attributes.name).replace(/_/, ' ')
         if (/\b(time|timestamp|date|deadline|expire)\b/.test(name)) {
@@ -69,7 +93,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const code: string[] = []
           if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
             // 高版本jdk的record类型
-            code.push(`public record ${className}(@${nonNullAnnotation} ${inferType(imports, info)} value) {`)
+            code.push(`public record ${className}(@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
             code.push(`    public ${className} {`)
             code.push(`        // HACK check value`)
             code.push(`    }`)
@@ -78,9 +102,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             // Lombok + class类型
             code.push(`@lombok.Getter`)
             code.push(`public class ${className} {`)
-            code.push(`    private final ${inferType(imports, info)} value;`)
+            code.push(`    private final ${inferJavaTypeByName(imports, info)} value;`)
             code.push(``)
-            code.push(`    public ${className} (@${nonNullAnnotation} ${inferType(imports, info)} value) {`)
+            code.push(`    public ${className} (@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
             code.push(`        // HACK check value`)
             code.push(`        this.value = value;`)
             code.push(`    }`)
@@ -88,14 +112,14 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           } else {
             // 普通class类型
             code.push(`public class ${getDomainObjectName(info)} {`)
-            code.push(`    private final ${inferType(imports, info)} value;`)
+            code.push(`    private final ${inferJavaTypeByName(imports, info)} value;`)
             code.push(``)
-            code.push(`    public ${className} (@${nonNullAnnotation} ${inferType(imports, info)} value) {`)
+            code.push(`    public ${className} (@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
             code.push(`        // HACK check value`)
             code.push(`        this.value = value;`)
             code.push(`    }`)
             code.push(``)
-            code.push(`    public ${inferType(imports, info)} getValue() {`)
+            code.push(`    public ${inferJavaTypeByName(imports, info)} getValue() {`)
             code.push(`        return this.value;`)
             code.push(`    }`)
             code.push(`}`)
@@ -123,11 +147,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const className = getDomainObjectName(cmd)
           const code: string[] = []
           const infos = Object.values(cmd.inner)
-          for (const info of infos) {
-            imports.add(
-              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
-            )
-          }
+          importInfos(imports, infos)
 
           if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
@@ -137,7 +157,12 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              infoCode.push(`        @${nonNullAnnotation}\n        ${infoName} ${strUtil.lowerFirst(infoName)}`)
+              infoCode.push(
+                `        @${nonNullAnnotation}\n        ${inferObjectValueTypeByInfo(
+                  imports,
+                  info
+                )} ${strUtil.lowerFirst(infoName)}`
+              )
             }
             code.push(infoCode.join(',\n'))
             code.push(`) {`)
@@ -155,7 +180,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
-              code.push(`    private final ${infoName} ${strUtil.lowerFirst(infoName)};`)
+              code.push(
+                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+              )
             }
             code.push(`}`)
           } else {
@@ -163,14 +190,18 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
-              code.push(`    private final ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)};`)
+              code.push(
+                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+              )
             }
             code.push(``)
             const argsCode: string[] = []
             const argsStatementCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              argsCode.push(`@${nonNullAnnotation} ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)}`)
+              argsCode.push(
+                `@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} ${strUtil.lowerFirst(infoName)}`
+              )
               argsStatementCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
             }
             code.push(`    public ${className}(${argsCode.join(', ')}) {`)
@@ -179,7 +210,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(``)
-              code.push(`    public ${inferType(imports, info)} get${infoName} () {`)
+              code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName} () {`)
               code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
               code.push(`    }`)
             }
@@ -265,11 +296,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             imports.add(context.value.nonNullAnnotation)
             const code: string[] = []
             const infos = Object.values(agg.inner)
-            for (const info of infos) {
-              imports.add(
-                `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
-              )
-            }
+            importInfos(imports, infos)
             if (additions.has(JavaGeneratorAddition.Lombok)) {
               code.push(`@lombok.AllArgsConstructor`)
               code.push(`@lombok.Getter`)
@@ -277,7 +304,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
                 code.push(`    @${nonNullAnnotation}`)
-                code.push(`    private ${infoName} ${strUtil.lowerFirst(infoName)};`)
+                code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }
               const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
                 return item._attributes.rule === 'Command' || item._attributes.rule === 'FacadeCommand'
@@ -299,7 +326,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
                 code.push(`    @${nonNullAnnotation}`)
-                code.push(`    private ${infoName} ${strUtil.lowerFirst(infoName)};`)
+                code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }
               code.push(``)
               // 构造函数
@@ -307,7 +334,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               const initArgsCode: string[] = []
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
-                argsCode.push(`@${nonNullAnnotation} ${infoName} ${strUtil.lowerFirst(infoName)}`)
+                argsCode.push(
+                  `@${nonNullAnnotation} ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)}`
+                )
                 initArgsCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
               }
               code.push(`    public ${className}(${argsCode.join(', ')}) {`)
@@ -317,7 +346,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 const infoName = getDomainObjectName(info)
                 code.push(``)
                 code.push(`    @${nonNullAnnotation}`)
-                code.push(`    public ${infoName} get${infoName}() {`)
+                code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName}() {`)
                 code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
                 code.push(`    }`)
               }
@@ -356,11 +385,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const className = getDomainObjectName(event)
           const code: string[] = []
           const infos = Object.values(event.inner)
-          for (const info of infos) {
-            imports.add(
-              `${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${getDomainObjectName(info)}`
-            )
-          }
+          importInfos(imports, infos)
           if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
             // 高版本jdk的record类型
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
@@ -370,7 +395,12 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              infoCode.push(`        @${nonNullAnnotation}\n        ${infoName} ${strUtil.lowerFirst(infoName)}`)
+              infoCode.push(
+                `        @${nonNullAnnotation}\n        ${inferObjectValueTypeByInfo(
+                  imports,
+                  info
+                )} ${strUtil.lowerFirst(infoName)}`
+              )
             }
             code.push(infoCode.join(',\n'))
             code.push(`) {`)
@@ -388,7 +418,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
               code.push(`    @${nonNullAnnotation}`)
-              code.push(`    private final ${infoName} ${strUtil.lowerFirst(infoName)};`)
+              code.push(
+                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+              )
             }
             code.push(`}`)
           } else {
@@ -403,7 +435,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const initArgsCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              argsCode.push(`@${nonNullAnnotation} ${inferType(imports, info)} ${strUtil.lowerFirst(infoName)}`)
+              argsCode.push(
+                `@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} ${strUtil.lowerFirst(infoName)}`
+              )
               initArgsCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
             }
             code.push(`    public ${className}(${argsCode.join(', ')}) {`)
@@ -436,6 +470,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
         function genInfos(infos: DomainDesignInfoRecord) {
           for (const info of Object.values(infos)) {
+            if (!isValueObject(info)) {
+              continue
+            }
             const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, VALUE_PACKAGE]
             const fileName = getDomainObjectName(info) + '.java'
             if (infoMap[`${parentDir.join('/')}/${fileName}`] === true) {

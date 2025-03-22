@@ -12,7 +12,7 @@ it('designer1', () => {
       // csharp.CSharpGeneratorAddition.PrimaryConstructor,
       // csharp.CSharpGeneratorAddition.AggInterface,
     ]),
-    moduleName: designer1._getContext().getModuleName() || 'User',
+    moduleName: designer1._getContext().getDesignerOptions().moduleName || 'User',
     namespace: 'Application.Domain',
     aggInterface: 'MyAgg',
   }
@@ -20,4 +20,27 @@ it('designer1', () => {
   const files = agg.commands.genCodeFiles()
   // expect(files).toBe(1)
   // expect(files.filter((i) => i.getName().endsWith('Event.cs'))).toBe(1)
+})
+
+it('designer1-ignoredValueObjects1', () => {
+  const agg = useGeneratorAgg(designer1)
+  GeneratorPliginHelper.registerPlugin(GENERATOR_CSHARP_PLUGIN)
+  const context: csharp.CSharpContext = {
+    additions: new Set([
+      // csharp.CSharpGeneratorAddition.PrimaryConstructor,
+      // csharp.CSharpGeneratorAddition.AggInterface,
+    ]),
+    moduleName: designer1._getContext().getDesignerOptions().moduleName || 'User',
+    namespace: 'Application.Domain',
+    aggInterface: 'MyAgg',
+  }
+  agg.commands.setContext(context)
+  const files = agg.commands.genCodeFiles()
+  expect(files.filter((i) => i.getName() === 'Time.cs').length).toBe(0)
+  expect(
+    files
+      .filter((i) => i.getName() === 'DeductFailedEvent.cs')[0]
+      .getContent()
+      .includes('System.DateTime Time')
+  ).toBeTruthy()
 })

@@ -49,7 +49,7 @@ const 物流系统 = d.system('mailSystem', '物流系统')
 
 const 创建订单失败流程 = d.startWorkflow('创建订单失败流程')
 const 下单命令 = d.command('createOrderCommand', [订单聚合.inner.orderId, 订单聚合.inner.userAccount])
-const 下单失败事件 = d.event('orderFailedEvent', [订单聚合.inner.orderId, 订单聚合.inner.orderTime])
+const 下单失败事件 = d.event('orderFailedEvent', [订单聚合.inner.orderId, 'time'])
 商城用户.command(下单命令).agg(订单聚合).event(下单失败事件)
 下单失败事件.system(物流系统)
 
@@ -68,7 +68,7 @@ const 支付规则 = d.policy(
 `
 )
 const 订单详情读模型 = d.readModel('orderDetailReadModel', [订单聚合.inner.orderId, 订单聚合.inner.orderTime])
-const 扣款失败事件 = d.event('deductFailedEvent', [订单聚合.inner.orderId, 订单聚合.inner.orderTime])
+const 扣款失败事件 = d.event('deductFailedEvent', [订单聚合.inner.orderId, 'time'])
 商城用户
   .command(下单命令)
   .agg(订单聚合)

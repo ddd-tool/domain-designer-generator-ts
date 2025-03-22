@@ -37,6 +37,19 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
     },
     mount({ api }) {
       const context = api.states.context as Readonly<Ref<CSharpContext>>
+      const ignoredValueObjects = api.states.designer.value
+        ._getContext()
+        .getDesignerOptions()
+        .ignoreValueObjects.map((s) => strUtil.stringToLowerCamel(s))
+      function isValueObject(info: DomainDesignInfo<DomainDesignInfoType, string>): boolean {
+        return !ignoredValueObjects.includes(strUtil.stringToLowerCamel(info._attributes.name))
+      }
+      function inferObjectValueTypeByInfo(imports: Set<string>, obj: DomainDesignInfo<DomainDesignInfoType, string>) {
+        if (isValueObject(obj)) {
+          return strUtil.stringToUpperCamel(obj._attributes.name)
+        }
+        return inferCsharpTypeByName(imports, obj)
+      }
 
       function getDomainObjectName(info: DomainDesignObject) {
         return strUtil.stringToUpperCamel(info._attributes.name)
@@ -46,7 +59,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         return additions.has(CSharpGeneratorAddition.RecordStruct) ? ' struct' : ''
       }
 
-      function inferType(_imports: Set<string>, obj: DomainDesignObject): string {
+      function inferCsharpTypeByName(_imports: Set<string>, obj: DomainDesignObject): string {
         const additions = context.value.additions
         const name = strUtil.stringToLowerSnake(obj._attributes.name).replace(/_/, ' ')
         if (/\b(time|timestamp|date|deadline|expire)\b/.test(name)) {
@@ -74,7 +87,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const imports = new Set<string>()
           const code: string[] = []
           code.push(
-            `public record${getStructModifier(additions)} ${getDomainObjectName(info)}(${inferType(
+            `public record${getStructModifier(additions)} ${getDomainObjectName(info)}(${inferCsharpTypeByName(
               imports,
               info
             )} value);`
@@ -103,7 +116,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const infoCode: string[] = []
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              infoCode.push(`${infoName} ${strUtil.upperFirst(infoName)}`)
+              infoCode.push(`${inferObjectValueTypeByInfo(imports, info)} ${strUtil.upperFirst(infoName)}`)
             }
             code.push(`    ${infoCode.join(',\n    ')}`)
             code.push(`)`)
@@ -191,7 +204,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               const paramCode: string[] = []
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
-                paramCode.push(`${infoName} ${strUtil.lowerFirst(infoName)}`)
+                paramCode.push(`${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)}`)
               }
               code.push(`public class ${aggName}`)
               code.push(`(`)
@@ -201,9 +214,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
                 code.push(
-                  `    public ${infoName} ${strUtil.upperFirst(infoName)} { get; private set; } = ${strUtil.lowerFirst(
+                  `    public ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.upperFirst(
                     infoName
-                  )};`
+                  )} { get; private set; } = ${strUtil.lowerFirst(infoName)};`
                 )
                 code.push(``)
               }
@@ -226,13 +239,17 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               code.push(`{`)
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
-                code.push(`    public ${infoName} ${strUtil.lowerFirst(infoName)} { get; private set; }`)
+                code.push(
+                  `    public ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(
+                    infoName
+                  )} { get; private set; }`
+                )
               }
               code.push(``)
               const paramCode: string[] = []
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
-                paramCode.push(`${infoName} ${infoName}`)
+                paramCode.push(`${inferObjectValueTypeByInfo(imports, info)} ${infoName}`)
               }
               code.push(`    public ${aggName}(${paramCode.join(', ')})`)
               code.push(`    {`)
@@ -276,7 +293,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const infoCode: string[] = []
           for (const info of infos) {
             const infoName = getDomainObjectName(info)
-            infoCode.push(`${infoName} ${strUtil.upperFirst(infoName)}`)
+            infoCode.push(`${inferObjectValueTypeByInfo(imports, info)} ${strUtil.upperFirst(infoName)}`)
           }
           code.push(`    ${infoCode.join(',\n    ')}`)
           code.push(`)`)
@@ -301,6 +318,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
         function genInfos(infos: DomainDesignInfoRecord): void {
           for (const info of Object.values(infos)) {
+            if (!isValueObject(info)) {
+              continue
+            }
             const fileName = getDomainObjectName(info) + '.cs'
             if (infoMap[`${parentDir.join('/')}/${fileName}`] === true) {
               continue

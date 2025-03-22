@@ -31,6 +31,19 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
     },
     mount({ api }) {
       const context = api.states.context as Readonly<Ref<GoContext>>
+      const ignoredValueObjects = api.states.designer.value
+        ._getContext()
+        .getDesignerOptions()
+        .ignoreValueObjects.map((s) => strUtil.stringToLowerCamel(s))
+      function isValueObject(info: DomainDesignInfo<DomainDesignInfoType, string>): boolean {
+        return !ignoredValueObjects.includes(strUtil.stringToLowerCamel(info._attributes.name))
+      }
+      function inferObjectValueTypeByInfo(imports: Set<string>, obj: DomainDesignInfo<DomainDesignInfoType, string>) {
+        if (isValueObject(obj)) {
+          return strUtil.stringToUpperCamel(obj._attributes.name)
+        }
+        return inferGoTypeByName(imports, obj)
+      }
 
       function getUpperDomainObjectName(info: DomainDesignObject) {
         return strUtil.stringToUpperCamel(info._attributes.name)
@@ -40,7 +53,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         return strUtil.stringToLowerCamel(info._attributes.name)
       }
 
-      function inferType(imports: Set<string>, obj: DomainDesignObject) {
+      function inferGoTypeByName(imports: Set<string>, obj: DomainDesignObject) {
         const name = strUtil.stringToLowerSnake(obj._attributes.name).replace(/_/, ' ')
         if (/\b(time|timestamp|date|deadline|expire)\b/.test(name)) {
           imports.add('time')
@@ -64,19 +77,20 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const imports = new Set<string>()
           const code: string[] = []
           code.push(`type ${getUpperDomainObjectName(info)} struct {`)
-          code.push(`    value ${inferType(imports, info)}`)
+          code.push(`    value ${inferGoTypeByName(imports, info)}`)
           code.push(`}`)
           code.push(``)
           code.push(
-            `func New${getUpperDomainObjectName(info)}(value ${inferType(imports, info)}) ${getUpperDomainObjectName(
+            `func New${getUpperDomainObjectName(info)}(value ${inferGoTypeByName(
+              imports,
               info
-            )} {`
+            )}) ${getUpperDomainObjectName(info)} {`
           )
           code.push(`    // HACK check value`)
           code.push(`    return ${getUpperDomainObjectName(info)}{value}`)
           code.push(`}`)
           code.push(
-            `func (${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}) GetValue() ${inferType(
+            `func (${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}) GetValue() ${inferGoTypeByName(
               imports,
               info
             )} {`
@@ -97,12 +111,13 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           code.push(`type ${cmdStruct} struct {`)
           const infos = Object.values(cmd.inner)
           for (const info of infos) {
-            code.push(`    ${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            code.push(`    ${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
           }
           code.push(`}`)
           for (const info of infos) {
             code.push(
-              `func (${cmdVal} ${cmdStruct}) Get${getUpperDomainObjectName(info)} () ${getUpperDomainObjectName(
+              `func (${cmdVal} ${cmdStruct}) Get${getUpperDomainObjectName(info)} () ${inferObjectValueTypeByInfo(
+                imports,
                 info
               )} {`
             )
@@ -112,7 +127,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const argsCode: string[] = []
           const structParams: string[] = []
           for (const info of infos) {
-            argsCode.push(`${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            argsCode.push(`${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
             structParams.push(getLowerDomainObjectName(info))
           }
           code.push(`func New${cmdStruct}(${argsCode.join(', ')}) ${cmdStruct} {`)
@@ -135,12 +150,13 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           code.push(`type ${cmdStruct} struct {`)
 
           for (const info of infos) {
-            code.push(`    ${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            code.push(`    ${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
           }
           code.push(`}`)
           for (const info of infos) {
             code.push(
-              `func (${cmdVal} ${cmdStruct}) Get${getUpperDomainObjectName(info)} () ${getUpperDomainObjectName(
+              `func (${cmdVal} ${cmdStruct}) Get${getUpperDomainObjectName(info)} () ${inferObjectValueTypeByInfo(
+                imports,
                 info
               )} {`
             )
@@ -150,7 +166,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const argsCode: string[] = []
           const structParams: string[] = []
           for (const info of infos) {
-            argsCode.push(`${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            argsCode.push(`${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
             structParams.push(getLowerDomainObjectName(info))
           }
           code.push(`func New${cmdStruct}(${argsCode.join(', ')}) ${cmdStruct} {`)
@@ -179,12 +195,15 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
         code.push(`type ${aggStruct} struct {`)
         for (const info of infos) {
-          code.push(`    ${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+          code.push(`    ${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
         }
         code.push(`}`)
         for (const info of infos) {
           code.push(
-            `func (${aggVal} ${aggStruct}) Get${getUpperDomainObjectName(info)} () ${getUpperDomainObjectName(info)} {`
+            `func (${aggVal} ${aggStruct}) Get${getUpperDomainObjectName(info)} () ${inferObjectValueTypeByInfo(
+              imports,
+              info
+            )} {`
           )
           code.push(`    return ${aggVal}.${getLowerDomainObjectName(info)}`)
           code.push(`}`)
@@ -193,7 +212,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         const argsCode: string[] = []
         const structParams: string[] = []
         for (const info of infos) {
-          argsCode.push(`${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+          argsCode.push(`${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
           structParams.push(getLowerDomainObjectName(info))
         }
         code.push(`func New${aggStruct}(${argsCode.join(', ')}) ${aggStruct} {`)
@@ -233,12 +252,13 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
           code.push(`type ${eventStruct} struct {`)
           for (const info of infos) {
-            code.push(`    ${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            code.push(`    ${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
           }
           code.push(`}`)
           for (const info of infos) {
             code.push(
-              `func (${eventVal} ${eventStruct}) Get${getUpperDomainObjectName(info)} () ${getUpperDomainObjectName(
+              `func (${eventVal} ${eventStruct}) Get${getUpperDomainObjectName(info)} () ${inferObjectValueTypeByInfo(
+                imports,
                 info
               )} {`
             )
@@ -248,7 +268,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const argsCode: string[] = []
           const structParams: string[] = []
           for (const info of infos) {
-            argsCode.push(`${getLowerDomainObjectName(info)} ${getUpperDomainObjectName(info)}`)
+            argsCode.push(`${getLowerDomainObjectName(info)} ${inferObjectValueTypeByInfo(imports, info)}`)
             structParams.push(getLowerDomainObjectName(info))
           }
           code.push(`func New${eventStruct}(${argsCode.join(', ')}) ${eventStruct} {`)
@@ -280,6 +300,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
 
         function genInfos(infos: DomainDesignInfoRecord) {
           for (const info of Object.values(infos)) {
+            if (!isValueObject(info)) {
+              continue
+            }
             const infoStruct = getUpperDomainObjectName(info)
             if (infoMap[`${parentDir.join('/')}/${infoStruct}`] === true) {
               continue
