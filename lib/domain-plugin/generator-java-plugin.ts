@@ -91,7 +91,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const className = getDomainObjectName(info)
           const additions = context.value.additions
           const code: string[] = []
-          if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
+          if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
             // 高版本jdk的record类型
             code.push(`public record ${className}(@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
             code.push(`    public ${className} {`)
@@ -149,7 +149,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const infos = Object.values(cmd.inner)
           importInfos(imports, infos)
 
-          if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
+          if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)
             }
@@ -386,7 +386,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const code: string[] = []
           const infos = Object.values(event.inner)
           importInfos(imports, infos)
-          if (additions.has(JavaGeneratorAddition.RecordVakueObject)) {
+          if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
             // 高版本jdk的record类型
             if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
               code.push(`@lombok.Builder(toBuilder = true)`)

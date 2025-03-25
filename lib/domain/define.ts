@@ -96,7 +96,7 @@ export namespace java {
   export enum JavaGeneratorAddition {
     Lombok = 'Lombok',
     LombokBuilder = 'LombokBuilder',
-    RecordVakueObject = 'RecordVakueObject',
+    RecordValueObject = 'RecordValueObject',
     CommandHandler = 'CommandHandler',
     Jpa = 'Jpa',
     Timezone = 'Timezone',
