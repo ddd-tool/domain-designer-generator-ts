@@ -77,7 +77,12 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         } else if (/^(if|is)\b/.test(name)) {
           return 'Boolean'
         }
-        if (isDomainDesignInfo(obj) && (obj._attributes.type === 'Id' || obj._attributes.type === 'Version')) {
+        if (
+          isDomainDesignInfo(obj) &&
+          (obj._attributes.type === 'Id' ||
+            obj._attributes.type === 'Version' ||
+            /\b(id|identifier|ver|version)$/.test(name))
+        ) {
           return 'Long'
         }
         return 'String'
