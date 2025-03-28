@@ -98,6 +98,10 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const code: string[] = []
           if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
             // 高版本jdk的record类型
+            if (additions.has(JavaGeneratorAddition.Jpa)) {
+              imports.add('javax.persistence.Embeddable')
+              code.push('@Embeddable')
+            }
             code.push(`public record ${className}(@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
             code.push(`    public ${className} {`)
             code.push(`        // HACK check value`)
@@ -106,6 +110,10 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           } else if (additions.has(JavaGeneratorAddition.Lombok)) {
             // Lombok + class类型
             code.push(`@lombok.Getter`)
+            if (additions.has(JavaGeneratorAddition.Jpa)) {
+              imports.add('javax.persistence.Embeddable')
+              code.push('@Embeddable')
+            }
             code.push(`public class ${className} {`)
             code.push(`    private final ${inferJavaTypeByName(imports, info)} value;`)
             code.push(``)
@@ -116,6 +124,10 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`}`)
           } else {
             // 普通class类型
+            if (additions.has(JavaGeneratorAddition.Jpa)) {
+              imports.add('javax.persistence.Embeddable')
+              code.push('@Embeddable')
+            }
             code.push(`public class ${getDomainObjectName(info)} {`)
             code.push(`    private final ${inferJavaTypeByName(imports, info)} value;`)
             code.push(``)
@@ -303,12 +315,34 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const infos = Object.values(agg.inner)
             importInfos(imports, infos)
             if (additions.has(JavaGeneratorAddition.Lombok)) {
-              code.push(`@lombok.AllArgsConstructor`)
+              code.push(
+                additions.has(JavaGeneratorAddition.Jpa) ? '@lombok.NoArgsConstructor' : '@lombok.AllArgsConstructor'
+              )
               code.push(`@lombok.Getter`)
+              if (additions.has(JavaGeneratorAddition.Jpa)) {
+                imports.add('javax.persistence.Entity')
+                code.push('@Entity')
+                imports.add('javax.persistence.Table')
+                code.push(`@Table(name = "${strUtil.camelToLowerSnake(className)}")`)
+              }
               code.push(`public class ${className}Impl implements ${className} {`)
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
                 code.push(`    @${nonNullAnnotation}`)
+                if (additions.has(JavaGeneratorAddition.Jpa)) {
+                  if (info._attributes.type === 'Id') {
+                    imports.add('javax.persistence.Id')
+                    code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
+                    code.push(`    @Id`)
+                  }
+                  imports.add('javax.persistence.AttributeOverride')
+                  imports.add('javax.persistence.Column')
+                  code.push(
+                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
+                      infoName
+                    )}", unique = true))`
+                  )
+                }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }
               const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
@@ -327,10 +361,30 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               }
               code.push(`}`)
             } else {
+              if (additions.has(JavaGeneratorAddition.Jpa)) {
+                imports.add('javax.persistence.Entity')
+                code.push('@Entity')
+                imports.add('javax.persistence.Table')
+                code.push(`@Table(name = "${strUtil.camelToLowerSnake(className)}")`)
+              }
               code.push(`public class ${className}Impl implements ${className} {`)
               for (const info of infos) {
                 const infoName = getDomainObjectName(info)
                 code.push(`    @${nonNullAnnotation}`)
+                if (additions.has(JavaGeneratorAddition.Jpa)) {
+                  if (info._attributes.type === 'Id') {
+                    imports.add('javax.persistence.Id')
+                    code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
+                    code.push(`    @Id`)
+                  }
+                  imports.add('javax.persistence.AttributeOverride')
+                  imports.add('javax.persistence.Column')
+                  code.push(
+                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
+                      infoName
+                    )}"))`
+                  )
+                }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }
               code.push(``)
@@ -338,13 +392,16 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               const argsCode: string[] = []
               const initArgsCode: string[] = []
               for (const info of infos) {
+                if (additions.has(JavaGeneratorAddition.Jpa)) {
+                  break
+                }
                 const infoName = getDomainObjectName(info)
                 argsCode.push(
                   `@${nonNullAnnotation} ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)}`
                 )
                 initArgsCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
               }
-              code.push(`    public ${className}(${argsCode.join(', ')}) {`)
+              code.push(`    public ${className}Impl(${argsCode.join(', ')}) {`)
               code.push(`        ${initArgsCode.join('\n        ')}`)
               code.push(`    }`)
               for (const info of infos) {

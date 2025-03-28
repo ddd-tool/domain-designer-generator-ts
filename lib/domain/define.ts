@@ -148,6 +148,7 @@ export type GeneratorAddition<LANG extends Language> = LANG extends 'java'
 export interface GeneratorContext<LANG extends Language> {
   namespace: string
   moduleName: string
+  idGenStrategy: 'TABLE' | 'SEQUENCE' | 'IDENTITY' | 'UUID' | 'AUTO'
   additions: Set<GeneratorAddition<LANG>>
 }
 
