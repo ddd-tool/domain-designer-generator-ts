@@ -54,7 +54,7 @@ const 下单失败事件 = d.event('orderFailedEvent', [订单聚合.inner.order
 下单失败事件.system(物流系统)
 
 const 创建订单成功_自动扣款失败流程 = d.startWorkflow('创建订单成功_自动扣款失败流程')
-const 自动扣款命令 = d.command('autoDeductCommand', [订单聚合.inner.orderId])
+const 自动扣款命令 = d.facadeCmd('autoDeductFacadeCommand', [订单聚合.inner.orderId])
 const 下单成功事件 = d.event('orderSucceedEvent', [订单聚合.inner.orderId, 订单聚合.inner.orderTime])
 const 自动扣款服务 = d.service('autoDeductService', '根据支付规则进行自动扣款')
 const 支付规则 = d.policy(
@@ -75,7 +75,7 @@ const 扣款失败事件 = d.event('deductFailedEvent', [订单聚合.inner.orde
   .event(下单成功事件)
   .policy(支付规则)
   .service(自动扣款服务)
-  .command(自动扣款命令)
+  .facadeCmd(自动扣款命令)
   .agg(订单聚合)
   .event(扣款失败事件)
 扣款失败事件.readModel(订单详情读模型)
@@ -89,7 +89,7 @@ const 扣款成功事件 = d.event('deductSucceedEvent', [订单聚合.inner.ord
   .event(下单成功事件)
   .policy(支付规则)
   .service(自动扣款服务)
-  .command(自动扣款命令)
+  .facadeCmd(自动扣款命令)
   .agg(订单聚合)
   .event(扣款成功事件)
 扣款成功事件.readModel(订单详情读模型)

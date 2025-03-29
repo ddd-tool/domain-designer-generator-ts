@@ -2,7 +2,7 @@ export namespace strUtil {
   export function stringToUpperCamel(str: string | String) {
     return str
       .trim()
-      .split(str.includes('_') ? /_|\s/ : /(?=[A-Z])/g)
+      .split(str.includes('_') || str.includes('-') || str.includes(' ') ? /_|\s|-/ : /(?=[A-Z])/g)
       .map((s) => s.charAt(0).toUpperCase() + s.toLowerCase().slice(1))
       .join('')
   }
@@ -10,7 +10,7 @@ export namespace strUtil {
     let first = true
     return str
       .trim()
-      .split(str.includes('_') ? /_|\s/ : /(?=[A-Z])/g)
+      .split(str.includes('_') || str.includes('-') || str.includes(' ') ? /_|\s|-/ : /(?=[A-Z])/g)
       .map((s) => {
         if (first) {
           first = false
@@ -21,7 +21,14 @@ export namespace strUtil {
       .join('')
   }
   export function stringToLowerSnake(str: string | String) {
-    return str.includes('_') ? str.toLowerCase() : camelToLowerSnake(str)
+    str = str.trim()
+    if (str.includes('_')) {
+      return str.toLowerCase()
+    }
+    if (str.includes(' ') || str.includes('-')) {
+      return str.split(/\s|-/).join('_').toLowerCase()
+    }
+    return camelToLowerSnake(str)
   }
   export function camelToUpperSnake(str: string | String) {
     return str

@@ -5,6 +5,7 @@ import {
   DomainDesignAgg,
   DomainDesignCommand,
   DomainDesignEvent,
+  DomainDesignFacadeCommand,
   DomainDesignInfo,
   DomainDesignInfoRecord,
   DomainDesignInfoType,
@@ -150,6 +151,59 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`}`)
             result.push({
               type: 'CommandHandler',
+              content: code.join('\n'),
+              imports,
+            })
+          }
+          return result
+        }
+      )
+
+      api.commands._setFacadeCommandCodeProvider(
+        (
+          cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>
+        ): CodeSnippets<'FacadeCommand' | 'FacadeCommandHandler'>[] => {
+          const result: CodeSnippets<'FacadeCommand' | 'FacadeCommandHandler'>[] = []
+          const additions = context.value.additions
+          const imports = new Set<string>()
+          const commandName = getDomainObjectName(cmd)
+          {
+            const code: string[] = []
+            const infos = Object.values(cmd.inner)
+            code.push(`public record${getStructModifier(additions)} ${commandName}`)
+            code.push(`(`)
+            const infoCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              infoCode.push(`${inferObjectValueTypeByInfo(imports, info)} ${strUtil.upperFirst(infoName)}`)
+            }
+            code.push(`    ${infoCode.join(',\n    ')}`)
+            code.push(`)`)
+            code.push(`{`)
+            code.push(`}`)
+            result.push({
+              type: 'FacadeCommand',
+              content: code.join('\n'),
+              imports,
+            })
+          }
+          {
+            const commandHandlerInterface = (() => {
+              if (additions.has(CSharpGeneratorAddition.CommandHandlerInterface)) {
+                return ` : ${context.value.commandHandlerInterface}`
+              }
+              return ''
+            })()
+            const code: string[] = []
+            code.push(`public class ${commandName}Handler${commandHandlerInterface}`)
+            code.push(`{`)
+            code.push(`    public void Handle(${commandName} command)`)
+            code.push(`    {`)
+            code.push(`        // HACK implement`)
+            code.push(`    }`)
+            code.push(`}`)
+            result.push({
+              type: 'FacadeCommandHandler',
               content: code.join('\n'),
               imports,
             })

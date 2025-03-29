@@ -82,7 +82,16 @@ export class CodeFile {
   }
 }
 export interface CodeSnippets<
-  TYPE extends 'Info' | 'Agg' | 'AggImpl' | 'Command' | 'CommandHandler' | 'Event' | 'FacadeCommand' | 'ReadMode'
+  TYPE extends
+    | 'Info'
+    | 'Agg'
+    | 'AggImpl'
+    | 'Command'
+    | 'CommandHandler'
+    | 'Event'
+    | 'FacadeCommand'
+    | 'FacadeCommandHandler'
+    | 'ReadMode'
 > {
   type: TYPE
   imports: Set<string>
@@ -158,7 +167,7 @@ export type CommandCodeProvider = (
 ) => CodeSnippets<'Command' | 'CommandHandler'>[]
 export type FacadeCommandCodeProvider = (
   cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>
-) => CodeSnippets<'FacadeCommand'>[]
+) => CodeSnippets<'FacadeCommand' | 'FacadeCommandHandler'>[]
 export type AggCodeProvider = (agg: DomainDesignAgg<DomainDesignInfoRecord>) => CodeSnippets<'Agg' | 'AggImpl'>[]
 export type EventCodeProvider = (event: DomainDesignEvent<DomainDesignInfoRecord>) => CodeSnippets<'Event'>[]
 export type ReadModelCodeProvider = (

@@ -2,6 +2,7 @@ import {
   DomainDesignAgg,
   DomainDesignCommand,
   DomainDesignEvent,
+  DomainDesignFacadeCommand,
   DomainDesignInfo,
   DomainDesignInfoRecord,
   DomainDesignInfoType,
@@ -10,7 +11,7 @@ import {
 } from '@ddd-tool/domain-designer-core'
 import { GeneratorPliginHelper } from '../domain/generator-agg'
 import { strUtil } from '../common'
-import { CodeFile, CodeSnippets, FacadeCommandCodeProvider, java } from '../domain/define'
+import { CodeFile, CodeSnippets, java } from '../domain/define'
 import { Ref } from '@vue/reactivity'
 
 const JavaGeneratorAddition = java.JavaGeneratorAddition
@@ -18,6 +19,8 @@ type JavaContext = java.JavaContext
 
 export default GeneratorPliginHelper.createHotSwapPlugin(() => {
   const VALUE_PACKAGE = 'value'
+  const COMMAND_PACKAGE = 'command'
+  const EVENT_PACKAGE = 'event'
   function getDomainObjectName(info: DomainDesignObject) {
     return strUtil.stringToUpperCamel(info._attributes.name)
   }
@@ -275,7 +278,127 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         return codeSnippets
       }
       api.commands._setCommandCodeProvider(commandCodeProvider)
-      api.commands._setFacadeCommandCodeProvider(commandCodeProvider as unknown as FacadeCommandCodeProvider)
+      api.commands._setFacadeCommandCodeProvider((cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>) => {
+        const codeSnippets: CodeSnippets<'FacadeCommand' | 'FacadeCommandHandler'>[] = []
+        const additions = context.value.additions
+        const nonNullAnnotation = context.value.nonNullAnnotation.split('.').pop()
+
+        {
+          const imports = new Set<string>()
+          imports.add(context.value.nonNullAnnotation)
+          const className = getDomainObjectName(cmd)
+          const code: string[] = []
+          const infos = Object.values(cmd.inner)
+          importInfos(imports, infos)
+
+          if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
+            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+              code.push(`@lombok.Builder(toBuilder = true)`)
+            }
+            code.push(`public record ${className}(`)
+            const infoCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              infoCode.push(
+                `        @${nonNullAnnotation}\n        ${inferObjectValueTypeByInfo(
+                  imports,
+                  info
+                )} ${strUtil.lowerFirst(infoName)}`
+              )
+            }
+            code.push(infoCode.join(',\n'))
+            code.push(`) {`)
+            code.push(`    public ${className} {`)
+            code.push(`        // HACK check value`)
+            code.push(`    }`)
+            code.push(`}`)
+          } else if (additions.has(JavaGeneratorAddition.Lombok)) {
+            code.push(`@lombok.AllArgsConstructor`)
+            code.push(`@lombok.Getter`)
+            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+              code.push(`@lombok.Builder(toBuilder = true)`)
+            }
+            code.push(`public class ${className} {`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(`    @${nonNullAnnotation}`)
+              code.push(
+                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+              )
+            }
+            code.push(`}`)
+          } else {
+            code.push(`public class ${className} {`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(`    @${nonNullAnnotation}`)
+              code.push(
+                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+              )
+            }
+            code.push(``)
+            const argsCode: string[] = []
+            const argsStatementCode: string[] = []
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              argsCode.push(
+                `@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} ${strUtil.lowerFirst(infoName)}`
+              )
+              argsStatementCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
+            }
+            code.push(`    public ${className}(${argsCode.join(', ')}) {`)
+            code.push(`        ${argsStatementCode.join('\n        ')}`)
+            code.push(`    }`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              code.push(``)
+              code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName} () {`)
+              code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
+              code.push(`    }`)
+            }
+            code.push(`}`)
+          }
+          codeSnippets.push({
+            type: 'FacadeCommand',
+            imports,
+            content: code.join('\n'),
+          })
+        }
+        if (!additions.has(JavaGeneratorAddition.CommandHandler)) {
+          return codeSnippets
+        }
+        {
+          const imports = new Set<string>()
+          imports.add(context.value.nonNullAnnotation)
+          const className = getDomainObjectName(cmd)
+          const code: string[] = []
+
+          if (additions.has(JavaGeneratorAddition.SpringFramework)) {
+            imports.add('org.springframework.stereotype.Component')
+            code.push(`@Component`)
+          }
+          if (additions.has(JavaGeneratorAddition.Lombok)) {
+            code.push(`@lombok.RequiredArgsConstructor`)
+          }
+          code.push(`public class ${className}Handler {`)
+          const aggs = [...api.states.designer.value._getContext().getAssociationMap()[cmd._attributes.__id]].filter(
+            (agg) => agg._attributes.rule === 'Agg'
+          )
+          for (const agg of aggs) {
+            imports.add(`${context.value.namespace}.${context.value.moduleName}.${getDomainObjectName(agg)}`)
+            code.push(`    public ${getDomainObjectName(agg)} handle(@${nonNullAnnotation} ${className} command) {`)
+            code.push(`        // HACK Implement`)
+            code.push(`    }`)
+          }
+          code.push(`}`)
+          codeSnippets.push({
+            type: 'FacadeCommandHandler',
+            imports,
+            content: code.join('\n'),
+          })
+        }
+        return codeSnippets
+      })
 
       api.commands._setAggCodeProvider(
         (agg: DomainDesignAgg<DomainDesignInfoRecord>): CodeSnippets<'Agg' | 'AggImpl'>[] => {
@@ -561,11 +684,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         for (const command of commands) {
           genInfos(command.inner)
           const codes = api.commands._genCommandCode(command)
-          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
+          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, COMMAND_PACKAGE]
           codes.forEach((code) => {
             if (code.type === 'Command') {
               const file = new CodeFile(parentDir, getDomainObjectName(command) + '.java')
-              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
+              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE};`)
               file.appendContentln('')
               file.addImports(code.imports)
               for (const imp of code.imports) {
@@ -576,7 +699,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               codeFiles.push(file)
             } else if (code.type === 'CommandHandler') {
               const file = new CodeFile(parentDir, getDomainObjectName(command) + 'Handler.java')
-              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
+              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE};`)
               file.appendContentln('')
               file.addImports(code.imports)
               for (const imp of code.imports) {
@@ -594,11 +717,22 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         for (const facadeCmd of facadeCommands) {
           genInfos(facadeCmd.inner)
           const codes = api.commands._genFacadeCommandCode(facadeCmd)
-          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
+          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, COMMAND_PACKAGE]
           codes.forEach((code) => {
             if (code.type === 'FacadeCommand') {
               const file = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + '.java')
-              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
+              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE};`)
+              file.appendContentln('')
+              file.addImports(code.imports)
+              for (const imp of code.imports) {
+                file.appendContentln(`import ${imp};`)
+              }
+              file.appendContentln('')
+              file.appendContentln(code.content)
+              codeFiles.push(file)
+            } else if (code.type === 'FacadeCommandHandler') {
+              const file = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + 'Handler.java')
+              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE};`)
               file.appendContentln('')
               file.addImports(code.imports)
               for (const imp of code.imports) {
@@ -649,10 +783,10 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         for (const event of events) {
           genInfos(event.inner)
           const codes = api.commands._genEventCode(event)
-          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
+          const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName, EVENT_PACKAGE]
           codes.forEach((code) => {
             const file = new CodeFile(parentDir, getDomainObjectName(event) + '.java')
-            file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName};`)
+            file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}.${EVENT_PACKAGE};`)
             file.appendContentln('')
             file.addImports(code.imports)
             for (const imp of code.imports) {

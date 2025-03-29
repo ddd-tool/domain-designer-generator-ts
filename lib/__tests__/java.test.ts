@@ -3,6 +3,45 @@ import designer1 from './designer-demo1'
 import { useGeneratorAgg, GENERATOR_JAVA_PLUGIN, GeneratorPliginHelper } from '..'
 import { java } from '../domain/define'
 
+it('base testing', () => {
+  const agg = useGeneratorAgg(designer1)
+  GeneratorPliginHelper.registerPlugin(GENERATOR_JAVA_PLUGIN)
+  const context: java.JavaContext = {
+    additions: new Set([java.JavaGeneratorAddition.CommandHandler]),
+    moduleName: designer1._getContext().getDesignerOptions().moduleName || 'test',
+    namespace: 'com.github.example',
+    nonNullAnnotation: 'org.springframework.lang.NonNull',
+    nullableAnnotation: 'org.springframework.lang.Nullable',
+    idGenStrategy: 'SEQUENCE',
+  }
+  agg.commands.setContext(context)
+  const files = agg.commands.genCodeFiles()
+  expect(
+    files
+      .filter((f) => f.getName() === 'CreateOrderCommand.java')[0]
+      .getParentDir()
+      .find((_, i, arr) => i === arr.length - 1)
+  ).toBe('command')
+  expect(
+    files
+      .filter((f) => f.getName() === 'AutoDeductFacadeCommand.java')[0]
+      .getParentDir()
+      .find((_, i, arr) => i === arr.length - 1)
+  ).toBe('command')
+  expect(
+    files
+      .filter((f) => f.getName() === 'OrderId.java')[0]
+      .getParentDir()
+      .find((_, i, arr) => i === arr.length - 1)
+  ).toBe('value')
+  expect(
+    files
+      .filter((f) => f.getName() === 'OrderSucceedEvent.java')[0]
+      .getParentDir()
+      .find((_, i, arr) => i === arr.length - 1)
+  ).toBe('event')
+})
+
 enum ExpectType {
   IncludeFile = 'IncludeFile',
   IncludeContent = 'IncludeContent',
