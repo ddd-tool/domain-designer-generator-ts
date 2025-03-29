@@ -424,7 +424,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             })
             for (const command of commands) {
               const commandName = getDomainObjectName(command)
-              // imports.add(`${context.value.namespace}.${context.value.moduleName}.${commandName}`)
+              imports.add(`${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE}.${commandName}`)
               funCode.push(`public void handle${commandName}(@${nonNullAnnotation} ${commandName} command);`)
             }
             code.push(`public interface ${className} {`)
@@ -484,7 +484,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                     context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
                   )
                   code.push(
-                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
+                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
                       infoName
                     )}"))`
                   )
@@ -496,6 +496,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               })
               for (const command of commands) {
                 const commandName = getDomainObjectName(command)
+                imports.add(`${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE}.${commandName}`)
                 code.push(``)
                 code.push(
                   `    public void handle${commandName}(@${nonNullAnnotation} ${commandName} ${strUtil.lowerFirst(
@@ -544,7 +545,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                     context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
                   )
                   code.push(
-                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
+                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
                       infoName
                     )}"))`
                   )
@@ -581,6 +582,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               )
               for (const command of commands) {
                 const commandName = getDomainObjectName(command)
+                imports.add(`${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE}.${commandName}`)
                 code.push(``)
                 code.push(
                   `    public void handle${commandName}(@${nonNullAnnotation} ${commandName} ${strUtil.lowerFirst(

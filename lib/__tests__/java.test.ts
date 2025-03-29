@@ -41,6 +41,18 @@ it('base testing', () => {
       .getParentDir()
       .find((_, i, arr) => i === arr.length - 1)
   ).toBe('event')
+  expect(
+    files
+      .filter((f) => f.getName() === 'OrderAgg.java')[0]
+      .getContent()
+      .includes('import com.github.example.command.CreateOrderCommand')
+  )
+  expect(
+    files
+      .filter((f) => f.getName() === 'OrderAggImpl.java')[0]
+      .getContent()
+      .includes('import com.github.example.command.CreateOrderCommand')
+  )
 })
 
 enum ExpectType {
@@ -132,7 +144,28 @@ const testCases = [
       {
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
-        contents: ['@Entity', '@Table(name = "order_agg")', '@Id', '@Column', 'OrderAggImpl()'],
+        contents: ['@Entity', '@Table(name = "order_agg")', '@Id', '@Column(name = "order_id")', 'OrderAggImpl()'],
+      },
+    ],
+  },
+  {
+    caseName: 'Lombok + Jpa',
+    additions: new Set([
+      java.JavaGeneratorAddition.CommandHandler,
+      java.JavaGeneratorAddition.Jpa,
+      java.JavaGeneratorAddition.Lombok,
+    ]),
+    expect: [
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          '@Entity',
+          '@Table(name = "order_agg")',
+          '@Id',
+          '@Column(name = "order_id")',
+          '@lombok.NoArgsConstructor',
+        ],
       },
     ],
   },
@@ -295,21 +328,6 @@ const testCases = [
           'javax.persistence.GeneratedValue',
           'javax.persistence.AttributeOverride',
         ],
-      },
-    ],
-  },
-  {
-    caseName: 'Lombok + Jpa',
-    additions: new Set([
-      java.JavaGeneratorAddition.CommandHandler,
-      java.JavaGeneratorAddition.Jpa,
-      java.JavaGeneratorAddition.Lombok,
-    ]),
-    expect: [
-      {
-        type: ExpectType.IncludeContent,
-        file: 'OrderAggImpl.java',
-        contents: ['@lombok.NoArgsConstructor', '@Entity', '@Table(name = "order_agg")', '@Id', '@Column'],
       },
     ],
   },
