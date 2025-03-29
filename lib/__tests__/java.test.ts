@@ -12,7 +12,7 @@ it('base testing', () => {
     namespace: 'com.github.example',
     nonNullAnnotation: 'org.springframework.lang.NonNull',
     nullableAnnotation: 'org.springframework.lang.Nullable',
-    idGenStrategy: 'SEQUENCE',
+    idGenStrategy: java.IdGenStrategy.SEQUENCE,
   }
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()
@@ -161,7 +161,7 @@ describe.each(testCases)('$caseName', ({ additions, expect: caseExpects }) => {
     namespace: 'com.github.example',
     nonNullAnnotation: 'org.springframework.lang.NonNull',
     nullableAnnotation: 'org.springframework.lang.Nullable',
-    idGenStrategy: 'SEQUENCE',
+    idGenStrategy: java.IdGenStrategy.SEQUENCE,
   }
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()

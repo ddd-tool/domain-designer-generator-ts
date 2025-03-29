@@ -111,9 +111,17 @@ export namespace java {
     Timezone = 'Timezone',
     SpringFramework = 'SpringFramework',
   }
+  export enum IdGenStrategy {
+    TABLE = 'TABLE',
+    SEQUENCE = 'SEQUENCE',
+    IDENTITY = 'IDENTITY',
+    UUID = 'UUID',
+    AUTO = 'AUTO',
+  }
   export interface JavaContext extends GeneratorContext<Language.Java> {
     nonNullAnnotation: string
     nullableAnnotation: string
+    idGenStrategy: IdGenStrategy
   }
 }
 export namespace kotlin {
@@ -157,7 +165,6 @@ export type GeneratorAddition<LANG extends Language> = LANG extends 'java'
 export interface GeneratorContext<LANG extends Language> {
   namespace: string
   moduleName: string
-  idGenStrategy: 'TABLE' | 'SEQUENCE' | 'IDENTITY' | 'UUID' | 'AUTO'
   additions: Set<GeneratorAddition<LANG>>
 }
 
