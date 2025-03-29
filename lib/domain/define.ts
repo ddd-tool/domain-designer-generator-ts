@@ -121,6 +121,7 @@ export namespace java {
   export interface JavaContext extends GeneratorContext<Language.Java> {
     nonNullAnnotation: string
     nullableAnnotation: string
+    jdkVersion: '8' | '17' | '21'
     idGenStrategy: IdGenStrategy
   }
 }

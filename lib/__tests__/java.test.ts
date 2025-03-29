@@ -13,6 +13,7 @@ it('base testing', () => {
     nonNullAnnotation: 'org.springframework.lang.NonNull',
     nullableAnnotation: 'org.springframework.lang.Nullable',
     idGenStrategy: java.IdGenStrategy.SEQUENCE,
+    jdkVersion: '17',
   }
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()
@@ -136,6 +137,168 @@ const testCases = [
     ],
   },
   {
+    caseName: 'Jpa + Jdk 8',
+    jdkVersion: '8' as const,
+    additions: new Set([
+      java.JavaGeneratorAddition.CommandHandler,
+      java.JavaGeneratorAddition.Timezone,
+      java.JavaGeneratorAddition.Jpa,
+    ]),
+    expect: [
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderId.java',
+        contents: ['javax.persistence.Embeddable'],
+      },
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'javax.persistence.Entity',
+          'javax.persistence.Table',
+          'javax.persistence.Id',
+          'javax.persistence.Column',
+          'javax.persistence.GeneratedValue',
+          'javax.persistence.AttributeOverride',
+        ],
+      },
+      {
+        type: ExpectType.ExcludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'jakarta.persistence.Entity',
+          'jakarta.persistence.Table',
+          'jakarta.persistence.Id',
+          'jakarta.persistence.Column',
+          'jakarta.persistence.GeneratedValue',
+          'jakarta.persistence.AttributeOverride',
+        ],
+      },
+    ],
+  },
+  {
+    caseName: 'Jpa + Jdk 8 (2)',
+    jdkVersion: '8' as const,
+    additions: new Set([
+      java.JavaGeneratorAddition.CommandHandler,
+      java.JavaGeneratorAddition.Timezone,
+      java.JavaGeneratorAddition.Jpa,
+      java.JavaGeneratorAddition.Lombok,
+    ]),
+    expect: [
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderId.java',
+        contents: ['javax.persistence.Embeddable'],
+      },
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'javax.persistence.Entity',
+          'javax.persistence.Table',
+          'javax.persistence.Id',
+          'javax.persistence.Column',
+          'javax.persistence.GeneratedValue',
+          'javax.persistence.AttributeOverride',
+        ],
+      },
+      {
+        type: ExpectType.ExcludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'jakarta.persistence.Entity',
+          'jakarta.persistence.Table',
+          'jakarta.persistence.Id',
+          'jakarta.persistence.Column',
+          'jakarta.persistence.GeneratedValue',
+          'jakarta.persistence.AttributeOverride',
+        ],
+      },
+    ],
+  },
+  {
+    caseName: 'Jpa + Jdk 17',
+    jdkVersion: '17' as const,
+    additions: new Set([
+      java.JavaGeneratorAddition.CommandHandler,
+      java.JavaGeneratorAddition.Timezone,
+      java.JavaGeneratorAddition.Jpa,
+    ]),
+    expect: [
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderId.java',
+        contents: ['jakarta.persistence.Embeddable'],
+      },
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'jakarta.persistence.Entity',
+          'jakarta.persistence.Table',
+          'jakarta.persistence.Id',
+          'jakarta.persistence.Column',
+          'jakarta.persistence.GeneratedValue',
+          'jakarta.persistence.AttributeOverride',
+        ],
+      },
+      {
+        type: ExpectType.ExcludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'javax.persistence.Entity',
+          'javax.persistence.Table',
+          'javax.persistence.Id',
+          'javax.persistence.Column',
+          'javax.persistence.GeneratedValue',
+          'javax.persistence.AttributeOverride',
+        ],
+      },
+    ],
+  },
+  {
+    caseName: 'Jpa + Jdk 17 (2)',
+    jdkVersion: '17' as const,
+    additions: new Set([
+      java.JavaGeneratorAddition.CommandHandler,
+      java.JavaGeneratorAddition.Timezone,
+      java.JavaGeneratorAddition.Jpa,
+      java.JavaGeneratorAddition.Lombok,
+    ]),
+    expect: [
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderId.java',
+        contents: ['jakarta.persistence.Embeddable'],
+      },
+      {
+        type: ExpectType.IncludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'jakarta.persistence.Entity',
+          'jakarta.persistence.Table',
+          'jakarta.persistence.Id',
+          'jakarta.persistence.Column',
+          'jakarta.persistence.GeneratedValue',
+          'jakarta.persistence.AttributeOverride',
+        ],
+      },
+      {
+        type: ExpectType.ExcludeContent,
+        file: 'OrderAggImpl.java',
+        contents: [
+          'javax.persistence.Entity',
+          'javax.persistence.Table',
+          'javax.persistence.Id',
+          'javax.persistence.Column',
+          'javax.persistence.GeneratedValue',
+          'javax.persistence.AttributeOverride',
+        ],
+      },
+    ],
+  },
+  {
     caseName: 'Lombok + Jpa',
     additions: new Set([
       java.JavaGeneratorAddition.CommandHandler,
@@ -152,16 +315,17 @@ const testCases = [
   },
 ]
 
-describe.each(testCases)('$caseName', ({ additions, expect: caseExpects }) => {
+describe.each(testCases)('$caseName', ({ additions, jdkVersion, expect: caseExpects }) => {
   const agg = useGeneratorAgg(designer1)
   GeneratorPliginHelper.registerPlugin(GENERATOR_JAVA_PLUGIN)
   const context: java.JavaContext = {
     additions,
     moduleName: designer1._getContext().getDesignerOptions().moduleName || 'test',
-    namespace: 'com.github.example',
+    namespace: 'com.github.alphafoxz.oneboot.domain.test',
     nonNullAnnotation: 'org.springframework.lang.NonNull',
     nullableAnnotation: 'org.springframework.lang.Nullable',
     idGenStrategy: java.IdGenStrategy.SEQUENCE,
+    jdkVersion: jdkVersion || '17',
   }
   agg.commands.setContext(context)
   const files = agg.commands.genCodeFiles()
@@ -181,7 +345,7 @@ describe.each(testCases)('$caseName', ({ additions, expect: caseExpects }) => {
         const f = files.find((f) => f.getName() === currentExpect.file)
         expect(f).not.toBeUndefined()
         for (const content of currentExpect.contents) {
-          expect(!f!.getContent()).includes(content)
+          expect(f!.getContent()).not.includes(content)
         }
       } else {
         isNever(currentExpect.type)

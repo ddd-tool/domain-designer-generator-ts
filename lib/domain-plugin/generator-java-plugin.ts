@@ -102,7 +102,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
             // 高版本jdk的record类型
             if (additions.has(JavaGeneratorAddition.Jpa)) {
-              imports.add('javax.persistence.Embeddable')
+              imports.add(
+                context.value.jdkVersion === '8' ? 'javax.persistence.Embeddable' : 'jakarta.persistence.Embeddable'
+              )
               code.push('@Embeddable')
             }
             code.push(`public record ${className}(@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} value) {`)
@@ -114,7 +116,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             // Lombok + class类型
             code.push(`@lombok.Getter`)
             if (additions.has(JavaGeneratorAddition.Jpa)) {
-              imports.add('javax.persistence.Embeddable')
+              imports.add(
+                context.value.jdkVersion === '8' ? 'javax.persistence.Embeddable' : 'jakarta.persistence.Embeddable'
+              )
               code.push('@Embeddable')
             }
             code.push(`public class ${className} {`)
@@ -128,7 +132,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           } else {
             // 普通class类型
             if (additions.has(JavaGeneratorAddition.Jpa)) {
-              imports.add('javax.persistence.Embeddable')
+              imports.add(
+                context.value.jdkVersion === '8' ? 'javax.persistence.Embeddable' : 'jakarta.persistence.Embeddable'
+              )
               code.push('@Embeddable')
             }
             code.push(`public class ${getDomainObjectName(info)} {`)
@@ -154,130 +160,129 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
         }
       )
 
-      function commandCodeProvider(
-        cmd: DomainDesignCommand<DomainDesignInfoRecord>
-      ): CodeSnippets<'Command' | 'CommandHandler'>[] {
-        const codeSnippets: CodeSnippets<'Command' | 'CommandHandler'>[] = []
-        const additions = context.value.additions
-        const nonNullAnnotation = context.value.nonNullAnnotation.split('.').pop()
+      api.commands._setCommandCodeProvider(
+        (cmd: DomainDesignCommand<DomainDesignInfoRecord>): CodeSnippets<'Command' | 'CommandHandler'>[] => {
+          const codeSnippets: CodeSnippets<'Command' | 'CommandHandler'>[] = []
+          const additions = context.value.additions
+          const nonNullAnnotation = context.value.nonNullAnnotation.split('.').pop()
 
-        {
-          const imports = new Set<string>()
-          imports.add(context.value.nonNullAnnotation)
-          const className = getDomainObjectName(cmd)
-          const code: string[] = []
-          const infos = Object.values(cmd.inner)
-          importInfos(imports, infos)
+          {
+            const imports = new Set<string>()
+            imports.add(context.value.nonNullAnnotation)
+            const className = getDomainObjectName(cmd)
+            const code: string[] = []
+            const infos = Object.values(cmd.inner)
+            importInfos(imports, infos)
 
-          if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
-            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
-              code.push(`@lombok.Builder(toBuilder = true)`)
-            }
-            code.push(`public record ${className}(`)
-            const infoCode: string[] = []
-            for (const info of infos) {
-              const infoName = getDomainObjectName(info)
-              infoCode.push(
-                `        @${nonNullAnnotation}\n        ${inferObjectValueTypeByInfo(
-                  imports,
-                  info
-                )} ${strUtil.lowerFirst(infoName)}`
-              )
-            }
-            code.push(infoCode.join(',\n'))
-            code.push(`) {`)
-            code.push(`    public ${className} {`)
-            code.push(`        // HACK check value`)
-            code.push(`    }`)
-            code.push(`}`)
-          } else if (additions.has(JavaGeneratorAddition.Lombok)) {
-            code.push(`@lombok.AllArgsConstructor`)
-            code.push(`@lombok.Getter`)
-            if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
-              code.push(`@lombok.Builder(toBuilder = true)`)
-            }
-            code.push(`public class ${className} {`)
-            for (const info of infos) {
-              const infoName = getDomainObjectName(info)
-              code.push(`    @${nonNullAnnotation}`)
-              code.push(
-                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
-              )
-            }
-            code.push(`}`)
-          } else {
-            code.push(`public class ${className} {`)
-            for (const info of infos) {
-              const infoName = getDomainObjectName(info)
-              code.push(`    @${nonNullAnnotation}`)
-              code.push(
-                `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
-              )
-            }
-            code.push(``)
-            const argsCode: string[] = []
-            const argsStatementCode: string[] = []
-            for (const info of infos) {
-              const infoName = getDomainObjectName(info)
-              argsCode.push(
-                `@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} ${strUtil.lowerFirst(infoName)}`
-              )
-              argsStatementCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
-            }
-            code.push(`    public ${className}(${argsCode.join(', ')}) {`)
-            code.push(`        ${argsStatementCode.join('\n        ')}`)
-            code.push(`    }`)
-            for (const info of infos) {
-              const infoName = getDomainObjectName(info)
+            if (additions.has(JavaGeneratorAddition.RecordValueObject)) {
+              if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+                code.push(`@lombok.Builder(toBuilder = true)`)
+              }
+              code.push(`public record ${className}(`)
+              const infoCode: string[] = []
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                infoCode.push(
+                  `        @${nonNullAnnotation}\n        ${inferObjectValueTypeByInfo(
+                    imports,
+                    info
+                  )} ${strUtil.lowerFirst(infoName)}`
+                )
+              }
+              code.push(infoCode.join(',\n'))
+              code.push(`) {`)
+              code.push(`    public ${className} {`)
+              code.push(`        // HACK check value`)
+              code.push(`    }`)
+              code.push(`}`)
+            } else if (additions.has(JavaGeneratorAddition.Lombok)) {
+              code.push(`@lombok.AllArgsConstructor`)
+              code.push(`@lombok.Getter`)
+              if (additions.has(JavaGeneratorAddition.LombokBuilder)) {
+                code.push(`@lombok.Builder(toBuilder = true)`)
+              }
+              code.push(`public class ${className} {`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(`    @${nonNullAnnotation}`)
+                code.push(
+                  `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+                )
+              }
+              code.push(`}`)
+            } else {
+              code.push(`public class ${className} {`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(`    @${nonNullAnnotation}`)
+                code.push(
+                  `    private final ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`
+                )
+              }
               code.push(``)
-              code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName} () {`)
-              code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
+              const argsCode: string[] = []
+              const argsStatementCode: string[] = []
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                argsCode.push(
+                  `@${nonNullAnnotation} ${inferJavaTypeByName(imports, info)} ${strUtil.lowerFirst(infoName)}`
+                )
+                argsStatementCode.push(`this.${strUtil.lowerFirst(infoName)} = ${strUtil.lowerFirst(infoName)};`)
+              }
+              code.push(`    public ${className}(${argsCode.join(', ')}) {`)
+              code.push(`        ${argsStatementCode.join('\n        ')}`)
+              code.push(`    }`)
+              for (const info of infos) {
+                const infoName = getDomainObjectName(info)
+                code.push(``)
+                code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName} () {`)
+                code.push(`        return this.${strUtil.lowerFirst(infoName)};`)
+                code.push(`    }`)
+              }
+              code.push(`}`)
+            }
+            codeSnippets.push({
+              type: 'Command',
+              imports,
+              content: code.join('\n'),
+            })
+          }
+          if (!additions.has(JavaGeneratorAddition.CommandHandler)) {
+            return codeSnippets
+          }
+          {
+            const imports = new Set<string>()
+            imports.add(context.value.nonNullAnnotation)
+            const className = getDomainObjectName(cmd)
+            const code: string[] = []
+
+            if (additions.has(JavaGeneratorAddition.SpringFramework)) {
+              imports.add('org.springframework.stereotype.Component')
+              code.push(`@Component`)
+            }
+            if (additions.has(JavaGeneratorAddition.Lombok)) {
+              code.push(`@lombok.RequiredArgsConstructor`)
+            }
+            code.push(`public class ${className}Handler {`)
+            const aggs = [...api.states.designer.value._getContext().getAssociationMap()[cmd._attributes.__id]].filter(
+              (agg) => agg._attributes.rule === 'Agg'
+            )
+            for (const agg of aggs) {
+              imports.add(`${context.value.namespace}.${context.value.moduleName}.${getDomainObjectName(agg)}`)
+              code.push(`    public ${getDomainObjectName(agg)} handle(@${nonNullAnnotation} ${className} command) {`)
+              code.push(`        // HACK Implement`)
               code.push(`    }`)
             }
             code.push(`}`)
+            codeSnippets.push({
+              type: 'CommandHandler',
+              imports,
+              content: code.join('\n'),
+            })
           }
-          codeSnippets.push({
-            type: 'Command',
-            imports,
-            content: code.join('\n'),
-          })
-        }
-        if (!additions.has(JavaGeneratorAddition.CommandHandler)) {
           return codeSnippets
         }
-        {
-          const imports = new Set<string>()
-          imports.add(context.value.nonNullAnnotation)
-          const className = getDomainObjectName(cmd)
-          const code: string[] = []
-
-          if (additions.has(JavaGeneratorAddition.SpringFramework)) {
-            imports.add('org.springframework.stereotype.Component')
-            code.push(`@Component`)
-          }
-          if (additions.has(JavaGeneratorAddition.Lombok)) {
-            code.push(`@lombok.RequiredArgsConstructor`)
-          }
-          code.push(`public class ${className}Handler {`)
-          const aggs = [...api.states.designer.value._getContext().getAssociationMap()[cmd._attributes.__id]].filter(
-            (agg) => agg._attributes.rule === 'Agg'
-          )
-          for (const agg of aggs) {
-            imports.add(`${context.value.namespace}.${context.value.moduleName}.${getDomainObjectName(agg)}`)
-            code.push(`    public ${getDomainObjectName(agg)} handle(@${nonNullAnnotation} ${className} command) {`)
-            code.push(`        // HACK Implement`)
-            code.push(`    }`)
-          }
-          code.push(`}`)
-          codeSnippets.push({
-            type: 'CommandHandler',
-            imports,
-            content: code.join('\n'),
-          })
-        }
-        return codeSnippets
-      }
-      api.commands._setCommandCodeProvider(commandCodeProvider)
+      )
       api.commands._setFacadeCommandCodeProvider((cmd: DomainDesignFacadeCommand<DomainDesignInfoRecord>) => {
         const codeSnippets: CodeSnippets<'FacadeCommand' | 'FacadeCommandHandler'>[] = []
         const additions = context.value.additions
@@ -443,9 +448,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               )
               code.push(`@lombok.Getter`)
               if (additions.has(JavaGeneratorAddition.Jpa)) {
-                imports.add('javax.persistence.Entity')
+                imports.add(
+                  context.value.jdkVersion === '8' ? 'javax.persistence.Entity' : 'jakarta.persistence.Entity'
+                )
                 code.push('@Entity')
-                imports.add('javax.persistence.Table')
+                imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Table' : 'jakarta.persistence.Table')
                 code.push(`@Table(name = "${strUtil.camelToLowerSnake(className)}")`)
               }
               code.push(`public class ${className}Impl implements ${className} {`)
@@ -454,16 +461,32 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 code.push(`    @${nonNullAnnotation}`)
                 if (additions.has(JavaGeneratorAddition.Jpa)) {
                   if (info._attributes.type === 'Id') {
-                    imports.add('javax.persistence.Id')
+                    imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Id' : 'jakarta.persistence.Id')
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.GeneratedValue'
+                        : 'jakarta.persistence.GeneratedValue'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.GenerationType'
+                        : 'jakarta.persistence.GenerationType'
+                    )
                     code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
                     code.push(`    @Id`)
                   }
-                  imports.add('javax.persistence.AttributeOverride')
-                  imports.add('javax.persistence.Column')
+                  imports.add(
+                    context.value.jdkVersion === '8'
+                      ? 'javax.persistence.AttributeOverride'
+                      : 'jakarta.persistence.AttributeOverride'
+                  )
+                  imports.add(
+                    context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                  )
                   code.push(
                     `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
                       infoName
-                    )}", unique = true))`
+                    )}"))`
                   )
                 }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
@@ -485,9 +508,11 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
               code.push(`}`)
             } else {
               if (additions.has(JavaGeneratorAddition.Jpa)) {
-                imports.add('javax.persistence.Entity')
+                imports.add(
+                  context.value.jdkVersion === '8' ? 'javax.persistence.Entity' : 'jakarta.persistence.Entity'
+                )
                 code.push('@Entity')
-                imports.add('javax.persistence.Table')
+                imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Table' : 'jakarta.persistence.Table')
                 code.push(`@Table(name = "${strUtil.camelToLowerSnake(className)}")`)
               }
               code.push(`public class ${className}Impl implements ${className} {`)
@@ -496,12 +521,28 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 code.push(`    @${nonNullAnnotation}`)
                 if (additions.has(JavaGeneratorAddition.Jpa)) {
                   if (info._attributes.type === 'Id') {
-                    imports.add('javax.persistence.Id')
+                    imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Id' : 'jakarta.persistence.Id')
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.GeneratedValue'
+                        : 'jakarta.persistence.GeneratedValue'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.GenerationType'
+                        : 'jakarta.persistence.GenerationType'
+                    )
                     code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
                     code.push(`    @Id`)
                   }
-                  imports.add('javax.persistence.AttributeOverride')
-                  imports.add('javax.persistence.Column')
+                  imports.add(
+                    context.value.jdkVersion === '8'
+                      ? 'javax.persistence.AttributeOverride'
+                      : 'jakarta.persistence.AttributeOverride'
+                  )
+                  imports.add(
+                    context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                  )
                   code.push(
                     `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToUpperSnake(
                       infoName
