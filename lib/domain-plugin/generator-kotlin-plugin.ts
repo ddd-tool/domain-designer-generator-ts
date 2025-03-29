@@ -324,22 +324,29 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           genInfos(facadeCmd.inner)
           const codes = api.commands._genFacadeCommandCode(facadeCmd)
           const parentDir = [...context.value.namespace.split(/\./), context.value.moduleName]
+          const file = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + '.kt')
+          const codeBuff: string[] = []
+          file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}`)
+          file.appendContentln('')
           codes.forEach((code) => {
             if (code.type === 'FacadeCommand') {
-              const file = new CodeFile(parentDir, getDomainObjectName(facadeCmd) + '.kt')
-              file.appendContentln(`package ${context.value.namespace}.${context.value.moduleName}`)
-              file.appendContentln('')
               file.addImports(code.imports)
-              for (const imp of code.imports) {
-                file.appendContentln(`import ${imp}`)
-              }
-              file.appendContentln('')
-              file.appendContentln(code.content)
-              codeFiles.push(file)
+              codeBuff.push(code.content)
+            } else if (code.type === 'FacadeCommandHandler') {
+              file.addImports(code.imports)
+              codeBuff.push(code.content)
             } else {
               isNever(code.type)
             }
           })
+          for (const imp of file.getImports()) {
+            file.appendContentln(`import ${imp}`)
+          }
+          file.appendContentln(``)
+          for (const buf of codeBuff) {
+            file.appendContentln(buf)
+          }
+          codeFiles.push(file)
         }
         const aggs = api.states.designer.value._getContext().getAggs()
         for (const agg of aggs) {
