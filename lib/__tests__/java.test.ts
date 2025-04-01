@@ -55,6 +55,23 @@ it('base testing', () => {
   )
 })
 
+it('unmount', () => {
+  const agg = useGeneratorAgg(designer1)
+  GeneratorPliginHelper.registerPlugin(GENERATOR_JAVA_PLUGIN)
+  GeneratorPliginHelper.unregisterPlugin(GENERATOR_JAVA_PLUGIN)
+  const context: java.JavaContext = {
+    additions: new Set([java.JavaGeneratorAddition.CommandHandler]),
+    moduleName: designer1._getContext().getDesignerOptions().moduleName || 'test',
+    namespace: 'com.github.example',
+    nonNullAnnotation: 'org.springframework.lang.NonNull',
+    nullableAnnotation: 'org.springframework.lang.Nullable',
+    idGenStrategy: java.IdGenStrategy.SEQUENCE,
+    jdkVersion: '17',
+  }
+  agg.commands.setContext(context)
+  expect(agg.commands.genCodeFiles()).toStrictEqual([])
+})
+
 enum ExpectType {
   IncludeFile = 'IncludeFile',
   IncludeContent = 'IncludeContent',
@@ -144,30 +161,27 @@ const testCases = [
       {
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
-        contents: ['@Entity', '@Table(name = "order_agg")', '@Id', '@Column(name = "order_id")', 'OrderAggImpl()'],
+        contents: [
+          '@Entity',
+          '@Table(name = "order_agg")',
+          '@GeneratedValue',
+          '@EmbeddedId',
+          '@Embedded',
+          '@AttributeOverride',
+          '@Column(name = "order_id")',
+          'OrderAggImpl()',
+        ],
       },
     ],
   },
   {
-    caseName: 'Lombok + Jpa',
+    caseName: 'Jpa + Java record',
     additions: new Set([
       java.JavaGeneratorAddition.CommandHandler,
       java.JavaGeneratorAddition.Jpa,
-      java.JavaGeneratorAddition.Lombok,
+      java.JavaGeneratorAddition.RecordValueObject,
     ]),
-    expect: [
-      {
-        type: ExpectType.IncludeContent,
-        file: 'OrderAggImpl.java',
-        contents: [
-          '@Entity',
-          '@Table(name = "order_agg")',
-          '@Id',
-          '@Column(name = "order_id")',
-          '@lombok.NoArgsConstructor',
-        ],
-      },
-    ],
+    expect: [{ type: ExpectType.IncludeContent, file: 'OrderId.java', contents: ['@Embeddable'] }],
   },
   {
     caseName: 'Jpa + Jdk 8',
@@ -187,12 +201,18 @@ const testCases = [
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
         contents: [
-          'javax.persistence.Entity',
-          'javax.persistence.Table',
-          'javax.persistence.Id',
-          'javax.persistence.Column',
-          'javax.persistence.GeneratedValue',
-          'javax.persistence.AttributeOverride',
+          '@Entity',
+          '@Table(name = "order_agg")',
+          'import javax.persistence.GeneratedValue',
+          '@GeneratedValue',
+          'import javax.persistence.EmbeddedId',
+          '@EmbeddedId',
+          'import javax.persistence.Embedded',
+          '@Embedded',
+          'import javax.persistence.AttributeOverride',
+          '@AttributeOverride',
+          'import javax.persistence.Column',
+          '@Column(name = "order_id")',
         ],
       },
       {
@@ -210,7 +230,7 @@ const testCases = [
     ],
   },
   {
-    caseName: 'Jpa + Jdk 8 (2)',
+    caseName: 'Jpa + Jdk8 + Lombok',
     jdkVersion: '8' as const,
     additions: new Set([
       java.JavaGeneratorAddition.CommandHandler,
@@ -228,12 +248,19 @@ const testCases = [
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
         contents: [
-          'javax.persistence.Entity',
-          'javax.persistence.Table',
-          'javax.persistence.Id',
-          'javax.persistence.Column',
-          'javax.persistence.GeneratedValue',
-          'javax.persistence.AttributeOverride',
+          '@Entity',
+          '@Table(name = "order_agg")',
+          'import javax.persistence.GeneratedValue',
+          '@GeneratedValue',
+          'import javax.persistence.EmbeddedId',
+          '@EmbeddedId',
+          'import javax.persistence.Embedded',
+          '@Embedded',
+          'import javax.persistence.AttributeOverride',
+          '@AttributeOverride',
+          'import javax.persistence.Column',
+          '@Column(name = "order_id")',
+          '@lombok.NoArgsConstructor',
         ],
       },
       {
@@ -251,7 +278,7 @@ const testCases = [
     ],
   },
   {
-    caseName: 'Jpa + Jdk 17',
+    caseName: 'Jpa + Jdk17',
     jdkVersion: '17' as const,
     additions: new Set([
       java.JavaGeneratorAddition.CommandHandler,
@@ -268,12 +295,18 @@ const testCases = [
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
         contents: [
-          'jakarta.persistence.Entity',
-          'jakarta.persistence.Table',
-          'jakarta.persistence.Id',
-          'jakarta.persistence.Column',
-          'jakarta.persistence.GeneratedValue',
-          'jakarta.persistence.AttributeOverride',
+          '@Entity',
+          '@Table(name = "order_agg")',
+          'import jakarta.persistence.GeneratedValue',
+          '@GeneratedValue',
+          'import jakarta.persistence.EmbeddedId',
+          '@EmbeddedId',
+          'import jakarta.persistence.Embedded',
+          '@Embedded',
+          'import jakarta.persistence.AttributeOverride',
+          '@AttributeOverride',
+          'import jakarta.persistence.Column',
+          '@Column(name = "order_id")',
         ],
       },
       {
@@ -291,7 +324,7 @@ const testCases = [
     ],
   },
   {
-    caseName: 'Jpa + Jdk 17 (2)',
+    caseName: 'Jpa + Jdk17 + Lombok',
     jdkVersion: '17' as const,
     additions: new Set([
       java.JavaGeneratorAddition.CommandHandler,
@@ -309,12 +342,19 @@ const testCases = [
         type: ExpectType.IncludeContent,
         file: 'OrderAggImpl.java',
         contents: [
-          'jakarta.persistence.Entity',
-          'jakarta.persistence.Table',
-          'jakarta.persistence.Id',
-          'jakarta.persistence.Column',
-          'jakarta.persistence.GeneratedValue',
-          'jakarta.persistence.AttributeOverride',
+          '@Entity',
+          '@Table(name = "order_agg")',
+          'import jakarta.persistence.GeneratedValue',
+          '@GeneratedValue',
+          'import jakarta.persistence.EmbeddedId',
+          '@EmbeddedId',
+          'import jakarta.persistence.Embedded',
+          '@Embedded',
+          'import jakarta.persistence.AttributeOverride',
+          '@AttributeOverride',
+          'import jakarta.persistence.Column',
+          '@Column(name = "order_id")',
+          '@lombok.NoArgsConstructor',
         ],
       },
       {

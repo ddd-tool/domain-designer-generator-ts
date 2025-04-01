@@ -461,7 +461,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 code.push(`    @${nonNullAnnotation}`)
                 if (additions.has(JavaGeneratorAddition.Jpa)) {
                   if (info._attributes.type === 'Id') {
-                    imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Id' : 'jakarta.persistence.Id')
                     imports.add(
                       context.value.jdkVersion === '8'
                         ? 'javax.persistence.GeneratedValue'
@@ -473,7 +472,17 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                         : 'jakarta.persistence.GenerationType'
                     )
                     code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
-                    code.push(`    @Id`)
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.EmbeddedId'
+                        : 'jakarta.persistence.EmbeddedId'
+                    )
+                    code.push(`    @EmbeddedId`)
+                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Embedded' : 'jakarta.persistence.Embedded'
+                    )
+                    code.push(`    @Embedded`)
                   }
                   imports.add(
                     context.value.jdkVersion === '8'
@@ -522,7 +531,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 code.push(`    @${nonNullAnnotation}`)
                 if (additions.has(JavaGeneratorAddition.Jpa)) {
                   if (info._attributes.type === 'Id') {
-                    imports.add(context.value.jdkVersion === '8' ? 'javax.persistence.Id' : 'jakarta.persistence.Id')
                     imports.add(
                       context.value.jdkVersion === '8'
                         ? 'javax.persistence.GeneratedValue'
@@ -534,7 +542,17 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                         : 'jakarta.persistence.GenerationType'
                     )
                     code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
-                    code.push(`    @Id`)
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.EmbeddedId'
+                        : 'jakarta.persistence.EmbeddedId'
+                    )
+                    code.push(`    @EmbeddedId`)
+                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Embedded' : 'jakarta.persistence.Embedded'
+                    )
+                    code.push(`    @Embedded`)
                   }
                   imports.add(
                     context.value.jdkVersion === '8'

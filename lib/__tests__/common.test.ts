@@ -7,6 +7,12 @@ it('snakeToUpperCamel', () => {
 
 it('camelToLowerSnake', () => {
   expect(strUtil.camelToLowerSnake('HelloWorld')).toBe('hello_world')
+  expect(strUtil.camelToLowerSnake('helloWorld')).toBe('hello_world')
+})
+
+it('camelToUpperSnake', () => {
+  expect(strUtil.camelToUpperSnake('HelloWorld')).toBe('HELLO_WORLD')
+  expect(strUtil.camelToUpperSnake('helloWorld')).toBe('HELLO_WORLD')
 })
 
 it('stringToLowerSnake', () => {

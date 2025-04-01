@@ -1,7 +1,7 @@
 // noinspection NonAsciiCharacters
 
 import { createDomainDesigner } from '@ddd-tool/domain-designer-core'
-import { DomainDesigner } from '@ddd-tool/domain-designer-core'
+import type { DomainDesigner } from '@ddd-tool/domain-designer-core'
 
 // moduleName 用于在代码生成时指定当前领域的分包名称。
 // 也可以不传参数，会默认为当前文件名，所以文件名为中文的时候要指定一下
