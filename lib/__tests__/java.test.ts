@@ -41,18 +41,13 @@ it('base testing', () => {
       .getParentDir()
       .find((_, i, arr) => i === arr.length - 1)
   ).toBe('event')
-  expect(
-    files
-      .filter((f) => f.getName() === 'OrderAgg.java')[0]
-      .getContent()
-      .includes('import com.github.example.command.CreateOrderCommand')
+  expect(files.filter((f) => f.getName() === 'OrderAggImpl.java')[0].getContent()).includes(
+    'import com.github.example.order.command.CreateOrderCommand'
   )
-  expect(
-    files
-      .filter((f) => f.getName() === 'OrderAggImpl.java')[0]
-      .getContent()
-      .includes('import com.github.example.command.CreateOrderCommand')
-  )
+  expect(files.filter((f) => f.getName() === 'OrderAgg.java')[0].getContent())
+    .includes('public OrderId getOrderId()')
+    .includes('import com.github.example.order.value.OrderId')
+    .includes('import com.github.example.order.command.CreateOrderCommand')
 })
 
 it('unmount', () => {
@@ -164,13 +159,17 @@ const testCases = [
         contents: [
           '@Entity',
           '@Table(name = "order_agg")',
-          '@GeneratedValue',
           '@EmbeddedId',
           '@Embedded',
           '@AttributeOverride',
-          '@Column(name = "order_id")',
+          '@Column(name = "order_id", updatable = false)',
           'OrderAggImpl()',
         ],
+      },
+      {
+        type: ExpectType.ExcludeContent,
+        file: 'OrderAggImpl.java',
+        contents: ['@GeneratedValue'],
       },
     ],
   },
@@ -203,8 +202,6 @@ const testCases = [
         contents: [
           '@Entity',
           '@Table(name = "order_agg")',
-          'import javax.persistence.GeneratedValue',
-          '@GeneratedValue',
           'import javax.persistence.EmbeddedId',
           '@EmbeddedId',
           'import javax.persistence.Embedded',
@@ -212,7 +209,7 @@ const testCases = [
           'import javax.persistence.AttributeOverride',
           '@AttributeOverride',
           'import javax.persistence.Column',
-          '@Column(name = "order_id")',
+          '@Column(name = "order_id", updatable = false)',
         ],
       },
       {
@@ -225,6 +222,7 @@ const testCases = [
           'jakarta.persistence.Column',
           'jakarta.persistence.GeneratedValue',
           'jakarta.persistence.AttributeOverride',
+          '@GeneratedValue',
         ],
       },
     ],
@@ -250,8 +248,6 @@ const testCases = [
         contents: [
           '@Entity',
           '@Table(name = "order_agg")',
-          'import javax.persistence.GeneratedValue',
-          '@GeneratedValue',
           'import javax.persistence.EmbeddedId',
           '@EmbeddedId',
           'import javax.persistence.Embedded',
@@ -259,7 +255,7 @@ const testCases = [
           'import javax.persistence.AttributeOverride',
           '@AttributeOverride',
           'import javax.persistence.Column',
-          '@Column(name = "order_id")',
+          '@Column(name = "order_id", updatable = false)',
           '@lombok.NoArgsConstructor',
         ],
       },
@@ -271,8 +267,8 @@ const testCases = [
           'jakarta.persistence.Table',
           'jakarta.persistence.Id',
           'jakarta.persistence.Column',
-          'jakarta.persistence.GeneratedValue',
           'jakarta.persistence.AttributeOverride',
+          '@GeneratedValue',
         ],
       },
     ],
@@ -297,8 +293,6 @@ const testCases = [
         contents: [
           '@Entity',
           '@Table(name = "order_agg")',
-          'import jakarta.persistence.GeneratedValue',
-          '@GeneratedValue',
           'import jakarta.persistence.EmbeddedId',
           '@EmbeddedId',
           'import jakarta.persistence.Embedded',
@@ -306,7 +300,7 @@ const testCases = [
           'import jakarta.persistence.AttributeOverride',
           '@AttributeOverride',
           'import jakarta.persistence.Column',
-          '@Column(name = "order_id")',
+          '@Column(name = "order_id", updatable = false)',
         ],
       },
       {
@@ -319,6 +313,7 @@ const testCases = [
           'javax.persistence.Column',
           'javax.persistence.GeneratedValue',
           'javax.persistence.AttributeOverride',
+          '@GeneratedValue',
         ],
       },
     ],
@@ -344,8 +339,6 @@ const testCases = [
         contents: [
           '@Entity',
           '@Table(name = "order_agg")',
-          'import jakarta.persistence.GeneratedValue',
-          '@GeneratedValue',
           'import jakarta.persistence.EmbeddedId',
           '@EmbeddedId',
           'import jakarta.persistence.Embedded',
@@ -353,7 +346,7 @@ const testCases = [
           'import jakarta.persistence.AttributeOverride',
           '@AttributeOverride',
           'import jakarta.persistence.Column',
-          '@Column(name = "order_id")',
+          '@Column(name = "order_id", updatable = false)',
           '@lombok.NoArgsConstructor',
         ],
       },
@@ -367,6 +360,7 @@ const testCases = [
           'javax.persistence.Column',
           'javax.persistence.GeneratedValue',
           'javax.persistence.AttributeOverride',
+          '@GeneratedValue',
         ],
       },
     ],

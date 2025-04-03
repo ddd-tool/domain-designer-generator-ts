@@ -412,23 +412,29 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
           const nonNullAnnotation = context.value.nonNullAnnotation.split('.').pop()
           const className = getDomainObjectName(agg)
           const codeSnippets: CodeSnippets<'Agg' | 'AggImpl'>[] = []
+          const infos = Object.values(agg.inner)
 
           {
             const imports = new Set<string>()
             imports.add(context.value.nonNullAnnotation)
             const code: string[] = []
 
-            const funCode: string[] = []
+            code.push(`public interface ${className} {`)
+            for (const info of infos) {
+              const infoName = getDomainObjectName(info)
+              imports.add(`${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${infoName}`)
+              code.push(`    public ${infoName} get${infoName}();`)
+              code.push('')
+            }
             const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
               return item._attributes.rule === 'Command' || item._attributes.rule === 'FacadeCommand'
             })
             for (const command of commands) {
               const commandName = getDomainObjectName(command)
               imports.add(`${context.value.namespace}.${context.value.moduleName}.${COMMAND_PACKAGE}.${commandName}`)
-              funCode.push(`public void handle${commandName}(@${nonNullAnnotation} ${commandName} command);`)
+              code.push(`    public void handle${commandName}(@${nonNullAnnotation} ${commandName} command);`)
+              code.push('')
             }
-            code.push(`public interface ${className} {`)
-            code.push(`    ${funCode.join('\n\n    ')}`)
             code.push(`}`)
             codeSnippets.push({
               type: 'Agg',
@@ -440,7 +446,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             const imports = new Set<string>()
             imports.add(context.value.nonNullAnnotation)
             const code: string[] = []
-            const infos = Object.values(agg.inner)
             importInfos(imports, infos)
             if (additions.has(JavaGeneratorAddition.Lombok)) {
               code.push(
@@ -461,17 +466,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                 code.push(`    @${nonNullAnnotation}`)
                 if (additions.has(JavaGeneratorAddition.Jpa)) {
                   if (info._attributes.type === 'Id') {
-                    imports.add(
-                      context.value.jdkVersion === '8'
-                        ? 'javax.persistence.GeneratedValue'
-                        : 'jakarta.persistence.GeneratedValue'
-                    )
-                    imports.add(
-                      context.value.jdkVersion === '8'
-                        ? 'javax.persistence.GenerationType'
-                        : 'jakarta.persistence.GenerationType'
-                    )
-                    code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
                     imports.add(
                       context.value.jdkVersion === '8'
                         ? 'javax.persistence.EmbeddedId'
@@ -495,7 +489,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                   code.push(
                     `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
                       infoName
-                    )}"))`
+                    )}"${info._attributes.type === 'Id' ? ', updatable = false' : ''}))`
                   )
                 }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
@@ -533,17 +527,6 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                   if (info._attributes.type === 'Id') {
                     imports.add(
                       context.value.jdkVersion === '8'
-                        ? 'javax.persistence.GeneratedValue'
-                        : 'jakarta.persistence.GeneratedValue'
-                    )
-                    imports.add(
-                      context.value.jdkVersion === '8'
-                        ? 'javax.persistence.GenerationType'
-                        : 'jakarta.persistence.GenerationType'
-                    )
-                    code.push(`    @GeneratedValue(strategy = GenerationType.${context.value.idGenStrategy})`)
-                    imports.add(
-                      context.value.jdkVersion === '8'
                         ? 'javax.persistence.EmbeddedId'
                         : 'jakarta.persistence.EmbeddedId'
                     )
@@ -565,7 +548,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                   code.push(
                     `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
                       infoName
-                    )}"))`
+                    )}"${info._attributes.type === 'Id' ? ', updatable = false' : ''}))`
                   )
                 }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
