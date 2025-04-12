@@ -46,7 +46,9 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
       }
       function inferObjectValueTypeByInfo(imports: Set<string>, obj: DomainDesignInfo<DomainDesignInfoType, string>) {
         if (isValueObject(obj)) {
-          return strUtil.stringToUpperCamel(obj._attributes.name)
+          const infoName = getDomainObjectName(obj)
+          imports.add(`${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${infoName}`)
+          return infoName
         }
         return inferJavaTypeByName(imports, obj)
       }
@@ -422,8 +424,7 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
             code.push(`public interface ${className} {`)
             for (const info of infos) {
               const infoName = getDomainObjectName(info)
-              imports.add(`${context.value.namespace}.${context.value.moduleName}.${VALUE_PACKAGE}.${infoName}`)
-              code.push(`    public ${infoName} get${infoName}();`)
+              code.push(`    public ${inferObjectValueTypeByInfo(imports, info)} get${infoName}();`)
               code.push('')
             }
             const commands = [...designer._getContext().getAssociationMap()[agg._attributes.__id]].filter((item) => {
@@ -472,25 +473,43 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                         : 'jakarta.persistence.EmbeddedId'
                     )
                     code.push(`    @EmbeddedId`)
-                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.AttributeOverride'
+                        : 'jakarta.persistence.AttributeOverride'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(
+                      `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
+                        infoName
+                      )}", updatable = false))`
+                    )
+                  } else if (isValueObject(info)) {
                     imports.add(
                       context.value.jdkVersion === '8' ? 'javax.persistence.Embedded' : 'jakarta.persistence.Embedded'
                     )
                     code.push(`    @Embedded`)
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.AttributeOverride'
+                        : 'jakarta.persistence.AttributeOverride'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(
+                      `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
+                        infoName
+                      )}"))`
+                    )
+                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(`    @Column(name = "${strUtil.camelToLowerSnake(infoName)}")`)
                   }
-                  imports.add(
-                    context.value.jdkVersion === '8'
-                      ? 'javax.persistence.AttributeOverride'
-                      : 'jakarta.persistence.AttributeOverride'
-                  )
-                  imports.add(
-                    context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
-                  )
-                  code.push(
-                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
-                      infoName
-                    )}"${info._attributes.type === 'Id' ? ', updatable = false' : ''}))`
-                  )
                 }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }
@@ -531,25 +550,43 @@ export default GeneratorPliginHelper.createHotSwapPlugin(() => {
                         : 'jakarta.persistence.EmbeddedId'
                     )
                     code.push(`    @EmbeddedId`)
-                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.AttributeOverride'
+                        : 'jakarta.persistence.AttributeOverride'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(
+                      `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
+                        infoName
+                      )}", updatable = false))`
+                    )
+                  } else if (isValueObject(info)) {
                     imports.add(
                       context.value.jdkVersion === '8' ? 'javax.persistence.Embedded' : 'jakarta.persistence.Embedded'
                     )
                     code.push(`    @Embedded`)
+                    imports.add(
+                      context.value.jdkVersion === '8'
+                        ? 'javax.persistence.AttributeOverride'
+                        : 'jakarta.persistence.AttributeOverride'
+                    )
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(
+                      `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
+                        infoName
+                      )}"))`
+                    )
+                  } else {
+                    imports.add(
+                      context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
+                    )
+                    code.push(`    @Column(name = "${strUtil.camelToLowerSnake(infoName)}")`)
                   }
-                  imports.add(
-                    context.value.jdkVersion === '8'
-                      ? 'javax.persistence.AttributeOverride'
-                      : 'jakarta.persistence.AttributeOverride'
-                  )
-                  imports.add(
-                    context.value.jdkVersion === '8' ? 'javax.persistence.Column' : 'jakarta.persistence.Column'
-                  )
-                  code.push(
-                    `    @AttributeOverride(name = "value", column = @Column(name = "${strUtil.camelToLowerSnake(
-                      infoName
-                    )}"${info._attributes.type === 'Id' ? ', updatable = false' : ''}))`
-                  )
                 }
                 code.push(`    private ${inferObjectValueTypeByInfo(imports, info)} ${strUtil.lowerFirst(infoName)};`)
               }

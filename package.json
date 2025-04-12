@@ -1,13 +1,14 @@
 {
   "name": "@ddd-tool/domain-designer-generator",
-  "version": "0.1.0-beta.9",
+  "version": "0.1.0-beta.10",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "run-p test:cli",
-    "test:cli": "vitest --coverage --run",
+    "test": "run-p test:dev",
+    "test:once": "vitest --coverage --run",
+    "test:dev": "vitest --coverage",
     "test:ui": "vitest --coverage --ui",
-    "build": "run-p build:lib verify test:cli && run-p build:sync-file",
+    "build": "run-p build:lib verify test:once && run-p build:sync-file",
     "build:lib": "vite build",
     "build:sync-file": "node ./scripts/build-sync-file.mjs",
     "verify": "vue-tsc -p ./tsconfig.build.json --composite false"

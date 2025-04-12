@@ -41,13 +41,16 @@ it('base testing', () => {
       .getParentDir()
       .find((_, i, arr) => i === arr.length - 1)
   ).toBe('event')
-  expect(files.filter((f) => f.getName() === 'OrderAggImpl.java')[0].getContent()).includes(
-    'import com.github.example.order.command.CreateOrderCommand'
-  )
   expect(files.filter((f) => f.getName() === 'OrderAgg.java')[0].getContent())
     .includes('public OrderId getOrderId()')
     .includes('import com.github.example.order.value.OrderId')
     .includes('import com.github.example.order.command.CreateOrderCommand')
+    .includes('String getName()')
+    .not.includes('import com.github.example.order.value.Name')
+  expect(files.filter((f) => f.getName() === 'OrderAggImpl.java')[0].getContent())
+    .includes('import com.github.example.order.command.CreateOrderCommand')
+    .includes('String name;')
+    .not.includes('import com.github.example.order.value.Name')
 })
 
 it('unmount', () => {
